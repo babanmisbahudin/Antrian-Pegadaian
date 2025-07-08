@@ -12,7 +12,8 @@
     "express": "^4.21.2",
     "fs-extra": "^11.2.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.16.1"
+    "mongoose": "^8.16.1",
+    "multer": "^2.0.1"
   },
   "keywords": [],
   "author": "",

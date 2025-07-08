@@ -14,9 +14,9 @@ export default function Admin() {
   });
   const [lastKasir, setLastKasir] = useState(0);
   const [lastPenaksir, setLastPenaksir] = useState(0);
-  const [videoList, setVideoList] = useState([]);
-  const [newVideo, setNewVideo] = useState("");
   const [hargaEmas, setHargaEmas] = useState([]);
+  const [selectedVideo, setSelectedVideo] = useState(null);
+  const [videoList, setVideoList] = useState([]); // ← Tambahkan baris ini  
 
   useEffect(() => {
     const fetchData = async () => {
@@ -28,7 +28,7 @@ export default function Admin() {
         setLastKasir(queueRes.data.lastKasir);
         setLastPenaksir(queueRes.data.lastPenaksir);
 
-        const videoRes = await api.get("/videos");
+        const videoRes = await api.get("/video");
         setVideoList(videoRes.data);
 
         const hargaRes = await api.get("/harga-emas");
@@ -123,42 +123,38 @@ export default function Admin() {
     }
   };
 
-  const handleAddVideo = async () => {
-    if (!newVideo.trim()) return alert("Masukkan link YouTube!");
-    let embedUrl = "";
-    if (newVideo.includes("embed")) {
-      embedUrl = newVideo;
-    } else if (newVideo.includes("watch?v=")) {
-      embedUrl = newVideo.replace("watch?v=", "embed/");
-    } else if (newVideo.includes("youtu.be/")) {
-      const id = newVideo.split("youtu.be/")[1];
-      embedUrl = `https://www.youtube.com/embed/${id}`;
-    } else {
-      return alert("Link YouTube tidak valid!");
-    }
-
+  const fetchVideos = async () => {
     try {
-      const res = await api.post("/videos", { url: embedUrl });
-      setVideoList([...videoList, res.data]);
-      setNewVideo("");
+      const res = await api.get("/video");
+      setVideoList(res.data);
     } catch (err) {
-      console.error(err);
-      alert("Gagal menambahkan video");
+      console.error("Gagal ambil video:", err);
     }
   };
 
-  const handleDeleteVideo = async (index) => {
-    if (!confirm("Hapus video ini?")) return;
-    const id = videoList[index]._id;
+  const handleDeleteVideo = async (id) => {
     try {
-      await api.delete(`/videos/${id}`);
-      const updated = [...videoList];
-      updated.splice(index, 1);
-      setVideoList(updated);
+      await api.delete(`/video/${id}`);
+      setVideoList((prev) => prev.filter((v) => v._id !== id));
     } catch (err) {
-      console.error(err);
-      alert("Gagal menghapus video");
+      console.error("Gagal hapus video:", err);
     }
+  };
+
+  const handleUpload = async () => {
+  if (!selectedVideo) return;
+  const formData = new FormData();
+  formData.append("video", selectedVideo);
+
+  try {
+    await api.post("/video/upload", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    setSelectedVideo(null);
+    fetchVideos(); // Refresh list
+  } catch (err) {
+    console.error("Gagal upload video:", err);
+  }
   };
 
   const handleHargaChange = (index, field, value) => {
@@ -318,7 +314,6 @@ export default function Admin() {
         </div>
       )}
 
-
       {/* TABEL USER */}
       <div className="bg-white p-4 rounded-lg shadow mb-4">
         <div className="flex justify-between items-center mb-2">
@@ -394,22 +389,48 @@ export default function Admin() {
         <button onClick={resetAntrian} className="mt-3 bg-red-600 text-white px-4 py-2 rounded">Reset Sekarang</button>
       </div>
 
-      {/* VIDEO PROMOSI */}
-      <div className="bg-white p-4 rounded-lg shadow mb-4">
-        <h2 className="font-semibold mb-2">Daftar Video Promosi</h2>
-        <div className="flex gap-2 mb-4">
-          <input type="text" value={newVideo} onChange={(e) => setNewVideo(e.target.value)} className="border p-2 rounded w-full" placeholder="Link YouTube (otomatis diubah ke embed)" />
-          <button onClick={handleAddVideo} className="bg-blue-600 text-white px-3 py-1 rounded">Tambah</button>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {videoList.map((url, i) => (
-            <div key={i} className="border rounded overflow-hidden shadow">
-              <iframe src={url.url} title={`video-${i}`} className="w-full aspect-video" allowFullScreen />
-              <button onClick={() => handleDeleteVideo(i)} className="w-full text-sm text-red-600 py-1 hover:underline">Hapus</button>
+      {/* DAFTAR VIDEO PROMOSI */}
+        <div className="bg-white p-4 rounded-xl shadow-xl mb-6">
+          <h2 className="text-lg font-bold text-gray-800 mb-4">📺 Daftar Video Promosi</h2>
+          
+          {videoList.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {videoList.map((video, index) => (
+                <div key={video._id} className="bg-black rounded-xl overflow-hidden shadow relative">
+                  <video
+                    src={`http://localhost:5000/uploads/video/${video.filename}`}
+                    className="w-full h-40 object-cover"
+                    muted
+                  />
+                  <button
+                    onClick={() => handleDeleteVideo(video._id)}
+                    className="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded hover:bg-red-700"
+                  >
+                    Hapus
+                  </button>
+                </div>
+              ))}
             </div>
-          ))}
+          ) : (
+            <p className="text-sm text-gray-500">Belum ada video yang diupload.</p>
+          )}
+
+          {/* ⬇️ Upload video section, disimpan di bawah list */}
+          <div className="mt-4 flex items-center gap-2">
+            <input
+              type="file"
+              accept="video/*"
+              onChange={(e) => setSelectedVideo(e.target.files[0])}
+              className="text-sm"
+            />
+            <button
+              onClick={handleUpload}
+              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+            >
+              Upload
+            </button>
+          </div>
         </div>
-      </div>
 
       {/* HARGA EMAS */}
       <div className="bg-white p-4 rounded-lg shadow mb-8">
@@ -453,13 +474,13 @@ export default function Admin() {
             <td>
   <button
     onClick={() => handleSaveHarga(i)}
-    className="bg-green-600 text-white text-sm px-2 py-1 rounded hover:bg-green-700 mr-2"
+    className=" text-black text-sm px-2 py-1 rounded hover:bg-yellow-100 mr-2"
   >
     💾 Simpan
   </button>
   <button
     onClick={() => handleDeleteHarga(i)}
-    className="bg-red-600 text-white text-sm px-2 py-1 rounded hover:bg-red-700"
+    className= "text-black text-sm px-2 py-1 rounded hover:bg-yellow-100"
   >
     🗑️ Hapus
   </button>

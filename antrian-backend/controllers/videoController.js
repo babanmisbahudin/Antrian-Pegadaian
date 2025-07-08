@@ -1,17 +1,16 @@
 const Video = require("../models/video");
 
-exports.createVideo = async (req, res) => {
+exports.uploadVideo = async (req, res) => {
   try {
-    const { url } = req.body;
-    if (!url) return res.status(400).json({ message: "URL diperlukan" });
+    if (!req.file) return res.status(400).json({ message: "File tidak ditemukan" });
 
-    const video = new Video({ url });
+    const video = new Video({ filename: req.file.filename });
     await video.save();
 
     res.status(201).json(video);
   } catch (err) {
-    console.error("Gagal tambah video:", err);
-    res.status(500).json({ message: "Gagal tambah video" });
+    console.error("Gagal upload video:", err);
+    res.status(500).json({ message: "Upload gagal" });
   }
 };
 
@@ -26,11 +25,17 @@ exports.getAllVideos = async (req, res) => {
 };
 
 exports.deleteVideo = async (req, res) => {
+  const fs = require("fs");
+  const path = require("path");
+
   try {
-    const { id } = req.params;
-    const deleted = await Video.findByIdAndDelete(id);
-    if (!deleted) return res.status(404).json({ message: "Video tidak ditemukan" });
-    res.json({ message: "Video berhasil dihapus" });
+    const video = await Video.findByIdAndDelete(req.params.id);
+    if (!video) return res.status(404).json({ message: "Video tidak ditemukan" });
+
+    const filePath = path.join(__dirname, "..", "uploads", "video", video.filename);
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+
+    res.json({ message: "Video dihapus" });
   } catch (err) {
     console.error("Gagal hapus video:", err);
     res.status(500).json({ message: "Gagal hapus video" });

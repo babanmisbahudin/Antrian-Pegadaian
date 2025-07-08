@@ -78,13 +78,18 @@ export default function Home() {
         {/* Video Promosi */}
         <div className="w-full lg:w-1/2 rounded-2xl overflow-hidden shadow-xl bg-black h-[300px]">
           {videoList.length > 0 ? (
-            <iframe
-              className="w-full h-full"
-              src={`${videoList[currentVideoIndex]?.url}?autoplay=1&loop=1&playlist=${videoList[currentVideoIndex]?.url.split("/embed/")[1]}`}
-              title="Video Promosi"
-              allow="autoplay; encrypted-media"
-              allowFullScreen
-            ></iframe>
+            <video
+            key={currentVideoIndex}
+            src={`http://localhost:5000/uploads/video/${videoList[currentVideoIndex]?.filename}`}
+            className="w-full h-full object-cover"
+            autoPlay={true}
+            muted={false}
+            controls={false}
+            onEnded={() =>
+              setCurrentVideoIndex((prev) => (prev + 1) % videoList.length)
+            }
+          />
+
           ) : (
             <div className="text-white text-center p-4">Belum ada video promosi</div>
           )}
