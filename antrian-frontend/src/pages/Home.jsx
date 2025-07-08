@@ -25,16 +25,16 @@ export default function Home() {
     }
   };
 
-  // Fetch video list
   const fetchVideos = async () => {
-    try {
-      const res = await api.get("/videos");
-      console.log("Video dari API:", res.data); // Debug
-      setVideoList(res.data);
-    } catch (err) {
-      console.error("Gagal ambil video:", err);
-    }
-  };
+  try {
+    const res = await api.get("/video");
+    console.log("✅ Data video diterima:", res.data);
+    setVideoList(res.data);
+  } catch (err) {
+    console.error("❌ Gagal ambil video:", err);
+  }
+};
+
 
   fetchHargaEmas();
   fetchVideos();
@@ -54,9 +54,9 @@ export default function Home() {
     <div className="min-h-screen bg-gray-100 text-gray-900 flex flex-col">
       {/* HEADER */}
       <div className="flex justify-between items-center px-6 py-3 bg-white shadow border-b border-gray-200">
-        <h1 className="text-xl font-bold text-green-800">Antrian Layanan</h1>
+        <h1 className="text-xl font-bold text-green-800">Pegadaian Cabang Majalengka</h1>
         <span className="text-sm font-medium text-gray-700">
-          Pegadaian Cabang Majalengka
+          DI Buat @himisbah
         </span>
       </div>
 
