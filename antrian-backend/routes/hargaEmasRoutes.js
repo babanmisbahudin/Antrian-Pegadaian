@@ -1,4 +1,3 @@
-// routes/hargaEmasRoutes.js
 const express = require("express");
 const router = express.Router();
 const {
@@ -8,16 +7,20 @@ const {
   deleteHarga
 } = require("../controllers/hargaEmasController");
 
-// GET semua data harga emas
+// [GET] Ambil semua data harga emas
+// Endpoint: GET /api/harga-emas
 router.get("/", getAllHarga);
 
-// POST tambah harga emas
+// [POST] Tambah satu data harga emas baru
+// Endpoint: POST /api/harga-emas
 router.post("/", addHarga);
 
-// PUT update semua harga emas
+// [PUT] Update satu data harga emas berdasarkan _id (di body)
+// Endpoint: PUT /api/harga-emas
 router.put("/", updateHarga);
 
-// DELETE satu baris harga emas
+// [DELETE] Hapus satu data harga emas berdasarkan :id
+// Endpoint: DELETE /api/harga-emas/:id
 router.delete("/:id", deleteHarga);
 
 module.exports = router;

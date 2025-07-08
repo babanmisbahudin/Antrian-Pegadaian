@@ -212,12 +212,31 @@ const handleUpdateHarga = async (index) => {
   }
   };
 
+  const formatRupiah = (angka) => {
+  const numberString = angka.toString().replace(/[^,\d]/g, "");
+  const split = numberString.split(",");
+  let sisa = split[0].length % 3;
+  let rupiah = split[0].substr(0, sisa);
+  const ribuan = split[0].substr(sisa).match(/\d{3}/g);
+
+  if (ribuan) {
+    rupiah += (sisa ? "." : "") + ribuan.join(".");
+  }
+
+  return "Rp " + rupiah + (split[1] ? "," + split[1] : "");
+  };
+
+  const parseRupiah = (str) => {
+  return Number(str.replace(/[^0-9]/g, ""));
+};
+
+
   const userProfile = users.find(u => u.role === "admin") || {
     nik: "EPS45359", nama: "Admin Utama", role: "admin", cabang: "Majalengka", outlet: "Pusat", loket: "0"
   };
 
   return (
-      <div className="min-h-screen bg-gray-50 p-4 text-sm">
+  <div className="min-h-screen bg-gray-50 p-4 text-sm">
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl font-bold text-green-700">Dashboard Admin</h1>
@@ -389,17 +408,17 @@ const handleUpdateHarga = async (index) => {
             </td>
             <td>
               <input
-                type="number"
-                value={item.beli}
-                onChange={(e) => handleHargaChange(i, "beli", e.target.value)}
+                type="text"
+                value={formatRupiah(item.beli)}
+                onChange={(e) => handleHargaChange(i, "beli", parseRupiah(e.target.value))}
                 className="w-full p-1 border rounded"
               />
             </td>
             <td>
               <input
-                type="number"
-                value={item.buyback}
-                onChange={(e) => handleHargaChange(i, "buyback", e.target.value)}
+                type="text"
+                value={formatRupiah(item.buyback)}
+                onChange={(e) => handleHargaChange(i, "buyback", parseRupiah(e.target.value))}
                 className="w-full p-1 border rounded"
               />
             </td>
@@ -423,4 +442,4 @@ const handleUpdateHarga = async (index) => {
         </button>
             </div>
           </div>
-        );}
+  );}
