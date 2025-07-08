@@ -84,7 +84,7 @@ export default function Home() {
             className="w-full h-full object-cover"
             autoPlay={true}
             muted={false}
-            controls={false}
+            controls={true}
             onEnded={() =>
               setCurrentVideoIndex((prev) => (prev + 1) % videoList.length)
             }

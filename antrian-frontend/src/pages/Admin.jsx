@@ -15,8 +15,8 @@ export default function Admin() {
   const [lastKasir, setLastKasir] = useState(0);
   const [lastPenaksir, setLastPenaksir] = useState(0);
   const [hargaEmas, setHargaEmas] = useState([]);
+  const [videoList, setVideoList] = useState([]);
   const [selectedVideo, setSelectedVideo] = useState(null);
-  const [videoList, setVideoList] = useState([]); // ← Tambahkan baris ini  
 
   useEffect(() => {
     const fetchData = async () => {
@@ -433,7 +433,7 @@ export default function Admin() {
         </div>
 
       {/* HARGA EMAS */}
-      <div className="bg-white p-4 rounded-lg shadow mb-8">
+        <div className="bg-white p-4 rounded-lg shadow mb-8">
         <h2 className="font-semibold mb-2">Harga Emas</h2>
         <table className="w-full border text-center text-sm mb-2">
           <thead className="bg-yellow-100">
@@ -472,18 +472,18 @@ export default function Admin() {
               />
             </td>
             <td>
-  <button
-    onClick={() => handleSaveHarga(i)}
-    className=" text-black text-sm px-2 py-1 rounded hover:bg-yellow-100 mr-2"
-  >
-    💾 Simpan
-  </button>
-  <button
-    onClick={() => handleDeleteHarga(i)}
-    className= "text-black text-sm px-2 py-1 rounded hover:bg-yellow-100"
-  >
-    🗑️ Hapus
-  </button>
+              <button
+                onClick={() => handleSaveHarga(i)}
+                className=" text-black text-sm px-2 py-1 rounded hover:bg-yellow-100 mr-2"
+              >
+                💾 Simpan
+              </button>
+              <button
+                onClick={() => handleDeleteHarga(i)}
+                className= "text-black text-sm px-2 py-1 rounded hover:bg-yellow-100"
+              >
+                🗑️ Hapus
+              </button>
             </td>
           </tr>
         ))}
@@ -495,6 +495,6 @@ export default function Admin() {
         >
           Tambah Baris
         </button>
-            </div>
-          </div>
+        </div>
+        </div>
   );}
