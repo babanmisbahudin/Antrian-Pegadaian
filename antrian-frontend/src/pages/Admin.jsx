@@ -167,12 +167,12 @@ export default function Admin() {
   setHargaEmas(updated);
   };
 
-const handleAddHarga = () => {
+  const handleAddHarga = () => {
   // Tambahkan baris kosong ke state saja, tanpa kirim ke backend
   setHargaEmas([...hargaEmas, { berat: "", beli: 0, buyback: 0 }]);
   };
 
-const handleUpdateHarga = async (index) => {
+  const handleUpdateHarga = async (index) => {
   const item = hargaEmas[index];
   try {
     const res = await api.put(`/harga-emas/${item._id}`, item);
@@ -188,29 +188,57 @@ const handleUpdateHarga = async (index) => {
 
   const handleSaveHarga = async (index) => {
   const item = hargaEmas[index];
+
   if (!item.berat || isNaN(item.beli) || isNaN(item.buyback)) {
     return alert("Lengkapi semua kolom dengan benar!");
   }
 
   try {
-    // Cek apakah ini data baru atau update
+    let res;
+
     if (item._id) {
-      const res = await api.put(`/harga-emas/${item._id}`, item);
-      const updated = [...hargaEmas];
-      updated[index] = res.data;
-      setHargaEmas(updated);
+      res = await api.put(`/harga-emas/${item._id}`, item);
     } else {
-      const res = await api.post("/harga-emas", item);
-      const updated = [...hargaEmas];
-      updated[index] = res.data;
-      setHargaEmas(updated);
+      res = await api.post("/harga-emas", item);
     }
+
+    const updated = [...hargaEmas];
+    updated[index] = res.data; // GANTI DENGAN HASIL YANG MENGANDUNG _id
+    setHargaEmas(updated);
+
     alert("Harga emas berhasil disimpan.");
   } catch (err) {
     console.error(err);
     alert("Gagal simpan harga emas.");
   }
   };
+
+  const handleDeleteHarga = async (index) => {
+  const item = hargaEmas[index];
+
+  // Jika belum tersimpan di database (belum punya _id), cukup hapus dari state
+  if (!item._id) {
+    const updated = [...hargaEmas];
+    updated.splice(index, 1);
+    setHargaEmas(updated);
+    return;
+  }
+
+  // Jika sudah punya _id, hapus dari database
+  if (!confirm("Yakin ingin hapus data ini?")) return;
+
+  try {
+    await api.delete(`/harga-emas/${item._id}`);
+    const updated = [...hargaEmas];
+    updated.splice(index, 1);
+    setHargaEmas(updated);
+    alert("Data berhasil dihapus");
+  } catch (err) {
+    console.error("Gagal hapus data harga emas:", err);
+    alert("Gagal hapus data harga emas");
+  }
+  };
+
 
   const formatRupiah = (angka) => {
   const numberString = angka.toString().replace(/[^,\d]/g, "");
@@ -423,12 +451,18 @@ const handleUpdateHarga = async (index) => {
               />
             </td>
             <td>
-              <button
-                onClick={() => handleSaveHarga(i)}
-                className="bg-green-600 text-white text-sm px-2 py-1 rounded hover:bg-green-700"
-              >
-                💾 Simpan
-              </button>
+  <button
+    onClick={() => handleSaveHarga(i)}
+    className="bg-green-600 text-white text-sm px-2 py-1 rounded hover:bg-green-700 mr-2"
+  >
+    💾 Simpan
+  </button>
+  <button
+    onClick={() => handleDeleteHarga(i)}
+    className="bg-red-600 text-white text-sm px-2 py-1 rounded hover:bg-red-700"
+  >
+    🗑️ Hapus
+  </button>
             </td>
           </tr>
         ))}

@@ -8,47 +8,47 @@ export default function Home() {
   const [videoList, setVideoList] = useState([]);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
 
-  useEffect(() => {
-    const intervalAntrian = setInterval(() => {
-      setKasir(localStorage.getItem("lastKasir") || "-");
-      setPenaksir(localStorage.getItem("lastPenaksir") || "-");
-    }, 2000);
+ useEffect(() => {
+  // Ambil antrian dari localStorage tiap 2 detik
+  const intervalAntrian = setInterval(() => {
+    setKasir(localStorage.getItem("lastKasir") || "-");
+    setPenaksir(localStorage.getItem("lastPenaksir") || "-");
+  }, 2000);
 
-    const fetchHargaEmas = async () => {
-      try {
-        const res = await api.get("/harga-emas");
-        setHargaEmas(res.data);
-      } catch (err) {
-        console.error("Gagal ambil harga emas:", err);
-      }
-    };
+  // Fetch harga emas
+  const fetchHargaEmas = async () => {
+    try {
+      const res = await api.get("/harga-emas");
+      setHargaEmas(res.data);
+    } catch (err) {
+      console.error("Gagal ambil harga emas:", err);
+    }
+  };
 
-    const fetchVideos = async () => {
-      try {
-        const res = await api.get("/videos");
-        setVideoList(res.data);
-      } catch (err) {
-        console.error("Gagal ambil video:", err);
-      }
-    };
+  // Fetch video list
+  const fetchVideos = async () => {
+    try {
+      const res = await api.get("/videos");
+      console.log("Video dari API:", res.data); // Debug
+      setVideoList(res.data);
+    } catch (err) {
+      console.error("Gagal ambil video:", err);
+    }
+  };
 
-    fetchHargaEmas();
-    fetchVideos();
+  fetchHargaEmas();
+  fetchVideos();
 
-    const refreshHargaInterval = setInterval(fetchHargaEmas, 60000); // tiap 1 menit
-    const refreshVideoInterval = setInterval(fetchVideos, 60000); // tiap 1 menit
+  const refreshHargaInterval = setInterval(fetchHargaEmas, 60000); // setiap 1 menit
+  const refreshVideoInterval = setInterval(fetchVideos, 60000);   // setiap 1 menit
 
-    const rotasiVideo = setInterval(() => {
-      setCurrentVideoIndex((prev) => (prev + 1) % (videoList.length || 1));
-    }, 20000); // rotasi tiap 20 detik
+  return () => {
+    clearInterval(intervalAntrian);
+    clearInterval(refreshHargaInterval);
+    clearInterval(refreshVideoInterval);
+  };
+  }, []); // ✅ hanya dijalankan sekali saat mount
 
-    return () => {
-      clearInterval(intervalAntrian);
-      clearInterval(refreshHargaInterval);
-      clearInterval(refreshVideoInterval);
-      clearInterval(rotasiVideo);
-    };
-  }, [videoList.length]);
 
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900 flex flex-col">
