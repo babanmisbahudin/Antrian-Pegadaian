@@ -1,59 +1,72 @@
-const Antrian = require("../models/antrian");
+const Antrian = require("../models/Antrian");
 
-// Tambah antrian baru
-exports.tambahAntrian = async (req, res) => {
-  const { loket, jenisLayanan } = req.body;
-
+// GET /api/antrian/kasir?loket=2
+exports.getAntrianKasir = async (req, res) => {
   try {
-    const last = await Antrian.find().sort({ nomor: -1 }).limit(1);
-    const lastNomor = last.length > 0 ? last[0].nomor : 0;
-
-    const newAntrian = await Antrian.create({
-      nomor: lastNomor + 1,
+    const loket = parseInt(req.query.loket);
+    const antrian = await Antrian.find({
+      tujuan: "kasir",
       loket,
-      jenisLayanan,
-    });
-
-    res.status(201).json(newAntrian);
-  } catch (err) {
-    res.status(500).json({ message: "Gagal tambah antrian" });
+      status: "menunggu",
+    }).sort({ waktu: 1 });
+    res.json(antrian);
+  } catch (error) {
+    res.status(500).json({ message: "Gagal ambil antrian" });
   }
 };
 
-// Ambil semua antrian
-exports.getAntrian = async (req, res) => {
+// POST /api/antrian/panggil
+exports.panggilAntrian = async (req, res) => {
   try {
-    const data = await Antrian.find().sort({ nomor: 1 });
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ message: "Gagal ambil data antrian" });
+    const { id, loket } = req.body;
+    await Antrian.findByIdAndUpdate(id, {
+      status: "dipanggil",
+      loket,
+    });
+    res.json({ message: "Antrian dipanggil" });
+  } catch (error) {
+    res.status(500).json({ message: "Gagal panggil antrian" });
   }
 };
 
-// Reset semua antrian
+// POST /api/antrian/reset
 exports.resetAntrian = async (req, res) => {
   try {
-    await Antrian.deleteMany({});
-    res.json({ message: "Antrian berhasil direset" });
-  } catch (err) {
+    const { id } = req.body;
+    await Antrian.findByIdAndUpdate(id, { status: "batal" });
+    res.json({ message: "Antrian direset" });
+  } catch (error) {
     res.status(500).json({ message: "Gagal reset antrian" });
   }
 };
 
-// Update status antrian
-exports.updateStatus = async (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body;
-
+// POST /api/antrian/mulai
+exports.mulaiAntrianAwal = async (req, res) => {
   try {
-    const updated = await Antrian.findByIdAndUpdate(
-      id,
-      { status },
-      { new: true }
-    );
+    const {
+      jumlah = 10,
+      prefix = "K",
+      start = 101,
+      tujuan = "kasir",
+      loket = 2,
+    } = req.body;
 
-    res.json(updated);
+    const antreanBaru = [];
+
+    for (let i = 0; i < jumlah; i++) {
+      const nomor = `${prefix}-${start + i}`;
+      antreanBaru.push({
+        nomor,
+        tujuan,
+        loket,
+        status: "menunggu",
+        waktu: new Date(),
+      });
+    }
+
+    const hasil = await Antrian.insertMany(antreanBaru);
+    res.json({ message: "Antrian awal berhasil dimulai", data: hasil });
   } catch (err) {
-    res.status(500).json({ message: "Gagal update status" });
+    res.status(500).json({ message: "Gagal mulai antrian awal" });
   }
 };

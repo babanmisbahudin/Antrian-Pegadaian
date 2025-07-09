@@ -1,15 +1,15 @@
 const express = require("express");
 const router = express.Router();
 const {
-  tambahAntrian,
-  getAntrian,
+  getAntrianKasir,
+  panggilAntrian,
   resetAntrian,
-  updateStatus,
+  mulaiAntrianAwal,
 } = require("../controllers/antrianController");
 
-router.post("/", tambahAntrian);
-router.get("/", getAntrian);
-router.delete("/reset", resetAntrian);
-router.put("/:id/status", updateStatus);
+router.get("/kasir", getAntrianKasir);
+router.post("/panggil", panggilAntrian);
+router.post("/reset", resetAntrian);
+router.post("/mulai", mulaiAntrianAwal);
 
 module.exports = router;

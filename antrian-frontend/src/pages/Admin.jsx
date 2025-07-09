@@ -12,6 +12,7 @@ export default function Admin() {
   const [form, setForm] = useState({
     nik: "", nama: "", password: "", role: "kasir", loket: "", cabang: "", outlet: ""
   });
+  const [logAktivitas, setLogAktivitas] = useState([]);
   const [lastKasir, setLastKasir] = useState(0);
   const [lastPenaksir, setLastPenaksir] = useState(0);
   const [hargaEmas, setHargaEmas] = useState([]);
@@ -110,16 +111,37 @@ export default function Admin() {
     }
   };
 
-  const resetAntrian = async () => {
-    if (!confirm("Reset semua nomor antrian?")) return;
+  const fetchStatistik = async () => {
     try {
-      const res = await api.post("/queue/reset");
-      setLastKasir(res.data.queue.lastKasir);
-      setLastPenaksir(res.data.queue.lastPenaksir);
-      alert("Nomor antrian berhasil direset.");
+      const res = await api.get("/antrian/statistik");
+      setLastKasir(res.data.lastKasir || 0);
+      setLastPenaksir(res.data.lastPenaksir || 0);
     } catch (err) {
-      console.error(err);
-      alert("Gagal reset antrian");
+      console.error("Gagal ambil statistik:", err);
+    }
+  };
+
+  const fetchLogAktivitas = async () => {
+    try {
+      const res = await api.get("/log");
+      setLogAktivitas(res.data);
+    } catch (err) {
+      console.error("Gagal ambil log aktivitas:", err);
+    }
+  };
+
+  const resetAntrian = async () => {
+    const konfirmasi = confirm("Yakin ingin reset seluruh nomor antrian?");
+    if (!konfirmasi) return;
+
+    try {
+      await api.post("/antrian/reset");
+      alert("Nomor antrian berhasil direset.");
+      fetchStatistik();
+      fetchLogAktivitas();
+    } catch (err) {
+      console.error("Gagal reset antrian:", err);
+      alert("Gagal reset antrian.");
     }
   };
 
@@ -235,7 +257,6 @@ export default function Admin() {
   }
   };
 
-
   const formatRupiah = (angka) => {
   const numberString = angka.toString().replace(/[^,\d]/g, "");
   const split = numberString.split(",");
@@ -254,247 +275,309 @@ export default function Admin() {
   return Number(str.replace(/[^0-9]/g, ""));
 };
 
-
   const userProfile = users.find(u => u.role === "admin") || {
     nik: "EPS45359", nama: "Admin Utama", role: "admin", cabang: "Majalengka", outlet: "Pusat", loket: "0"
   };
 
   return (
   <div className="min-h-screen bg-gray-50 p-4 text-sm">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-xl font-bold text-green-700">Dashboard Admin</h1>
-        <div className="relative">
-          <button
-            onClick={() => setShowDropdown(!showDropdown)}
-            className="bg-green-600 text-white rounded-full w-9 h-9 flex items-center justify-center hover:bg-green-700"
-          >☰</button>
-          {showDropdown && (
-            <div className="absolute right-0 mt-2 bg-white shadow-lg rounded-md z-50 w-48">
-              <button
-                onClick={() => {
-                  setShowDropdown(false);
-                  setShowProfileModal(true);
-                }}
-                className="block px-4 py-2 hover:bg-gray-100 w-full text-left"
-              >✏️ Edit Profil</button>
-              <button
-                onClick={() => {
-                  localStorage.removeItem("isLoggedIn");
-                  navigate("/login");
-                }}
-                className="block px-4 py-2 hover:bg-gray-100 w-full text-left text-red-600"
-              >🚪 Logout</button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Modal Edit Profil */}
-      {showProfileModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-[9999]">
-          <div className="bg-white rounded-xl p-6 w-full max-w-sm shadow-lg">
-            <h2 className="text-lg font-bold mb-4">Edit Profil Admin</h2>
-            <form className="flex flex-col gap-2">
-              <input value={userProfile.nik} readOnly className="border p-2 rounded bg-gray-100" />
-              <input value={userProfile.nama} readOnly className="border p-2 rounded bg-gray-100" />
-              <input value={userProfile.role} readOnly className="border p-2 rounded bg-gray-100" />
-              <input value={userProfile.cabang} readOnly className="border p-2 rounded bg-gray-100" />
-              <input value={userProfile.outlet} readOnly className="border p-2 rounded bg-gray-100" />
-              <input value={userProfile.loket} readOnly className="border p-2 rounded bg-gray-100" />
-              <div className="flex justify-end mt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowProfileModal(false)}
-                  className="text-gray-600 hover:underline"
-                >Tutup</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* TABEL USER */}
-      <div className="bg-white p-4 rounded-lg shadow mb-4">
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="font-semibold">Kelola User</h2>
-          <button onClick={() => { resetForm(); setShowModal(true); }} className="bg-green-600 text-white px-3 py-1 rounded">Tambah User</button>
-        </div>
-        <table className="w-full border text-center">
-          <thead className="bg-green-100">
-            <tr><th>NIK</th><th>Nama</th><th>Role</th><th>Loket</th><th>Cabang</th><th>Outlet</th><th>Aksi</th></tr>
-          </thead>
-          <tbody>
-            {users.map((user, i) => (
-              <tr key={i} className="border">
-                <td>{user.nik}</td>
-                <td>{user.nama}</td>
-                <td>{user.role}</td>
-                <td>{user.role === "satpam" ? "-" : user.loket}</td>
-                <td>{user.cabang}</td>
-                <td>{user.outlet}</td>
-                <td>
-                  <button onClick={() => handleEditUser(i)} className="text-blue-600 mr-2 hover:underline">Edit</button>
-                  <button onClick={() => handleDeleteUser(i)} className="text-red-600 hover:underline">Hapus</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* MODAL TAMBAH/EDIT USER */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-[9999]">
-          <div className="bg-white rounded-xl p-4 w-full max-w-sm shadow-lg">
-            <h3 className="text-lg font-semibold mb-2">{editingIndex !== null ? "Edit User" : "Tambah User"}</h3>
-            <form onSubmit={handleAddOrUpdateUser} className="flex flex-col gap-2">
-              <input name="nama" value={form.nama} onChange={handleChange} placeholder="Nama" className="border p-2 rounded" />
-              <input name="nik" value={form.nik} onChange={handleChange} placeholder="NIK" className="border p-2 rounded" />
-              <input name="cabang" value={form.cabang} onChange={handleChange} placeholder="Cabang" className="border p-2 rounded" />
-              <input name="outlet" value={form.outlet} onChange={handleChange} placeholder="Outlet" className="border p-2 rounded" />
-              <input name="password" type="password" value={form.password} onChange={handleChange} placeholder="Password" className="border p-2 rounded" />
-              <select name="role" value={form.role} onChange={handleChange} className="border p-2 rounded">
-                <option value="kasir">Kasir</option>
-                <option value="penaksir">Penaksir</option>
-                <option value="satpam">Satpam</option>
-                <option value="admin">Admin</option>
-              </select>
-              {form.role !== "satpam" && (
-                <input name="loket" value={form.loket} onChange={handleChange} placeholder="Loket" className="border p-2 rounded" />
-              )}
-              <div className="flex justify-between mt-2">
-                <button type="submit" className="bg-green-600 text-white px-4 py-1 rounded">Simpan</button>
-                <button type="button" onClick={() => { resetForm(); setShowModal(false); }} className="text-gray-500 hover:underline">Batal</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* RESET ANTRIAN */}
-      <div className="bg-white rounded-xl shadow p-6 mb-6">
-        <h2 className="text-lg font-semibold text-red-700 mb-4">🔁 Reset Nomor Antrian</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-          <div className="border p-4 rounded-lg bg-red-50">
-            <p>Nomor Terakhir Kasir:</p>
-            <p className="text-2xl font-bold text-red-600">{lastKasir}</p>
-          </div>
-          <div className="border p-4 rounded-lg bg-red-50">
-            <p>Nomor Terakhir Penaksir:</p>
-            <p className="text-2xl font-bold text-red-600">{lastPenaksir}</p>
-          </div>
-        </div>
-        <p>Total antrian terpakai: <strong>{lastKasir + lastPenaksir}</strong></p>
-        <button onClick={resetAntrian} className="mt-3 bg-red-600 text-white px-4 py-2 rounded">Reset Sekarang</button>
-      </div>
-
-      {/* DAFTAR VIDEO PROMOSI */}
-        <div className="bg-white p-4 rounded-xl shadow-xl mb-6">
-          <h2 className="text-lg font-bold text-gray-800 mb-4">📺 Daftar Video Promosi</h2>
-          
-          {videoList.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {videoList.map((video, index) => (
-                <div key={video._id} className="bg-black rounded-xl overflow-hidden shadow relative">
-                  <video
-                    src={`http://localhost:5000/uploads/video/${video.filename}`}
-                    className="w-full h-40 object-cover"
-                    muted
-                  />
-                  <button
-                    onClick={() => handleDeleteVideo(video._id)}
-                    className="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded hover:bg-red-700"
-                  >
-                    Hapus
-                  </button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-gray-500">Belum ada video yang diupload.</p>
-          )}
-
-          {/* ⬇️ Upload video section, disimpan di bawah list */}
-          <div className="mt-4 flex items-center gap-2">
-            <input
-              type="file"
-              accept="video/*"
-              onChange={(e) => setSelectedVideo(e.target.files[0])}
-              className="text-sm"
-            />
+    {/* ==== HEADER ==== */}
+    <div className="flex justify-between items-center mb-6">
+      <h1 className="text-xl font-bold text-green-700">Dashboard Admin</h1>
+      <div className="relative">
+        <button
+          onClick={() => setShowDropdown(!showDropdown)}
+          className="bg-green-600 text-white rounded-full w-9 h-9 flex items-center justify-center hover:bg-green-700"
+        >
+          ☰
+        </button>
+        {showDropdown && (
+          <div className="absolute right-0 mt-2 bg-white shadow-lg rounded-md z-50 w-48">
             <button
-              onClick={handleUpload}
-              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+              onClick={() => {
+                setShowDropdown(false);
+                setShowProfileModal(true);
+              }}
+              className="block px-4 py-2 hover:bg-gray-100 w-full text-left"
             >
-              Upload
+              ✏️ Edit Profil
+            </button>
+            <button
+              onClick={() => {
+                localStorage.removeItem("isLoggedIn");
+                navigate("/login");
+              }}
+              className="block px-4 py-2 hover:bg-gray-100 w-full text-left text-red-600"
+            >
+              🚪 Logout
             </button>
           </div>
-        </div>
+        )}
+      </div>
+    </div>
 
-      {/* HARGA EMAS */}
-        <div className="bg-white p-4 rounded-lg shadow mb-8">
-        <h2 className="font-semibold mb-2">Harga Emas</h2>
-        <table className="w-full border text-center text-sm mb-2">
-          <thead className="bg-yellow-100">
-            <tr>
-              <th>Berat</th>
-              <th>Harga Beli</th>
-              <th>Buyback</th>
-              <th>Aksi</th>
-            </tr>
-          </thead>
-        <tbody>
-        {hargaEmas.map((item, i) => (
-          <tr key={i}>
-            <td>
+    {/* ==== MODAL PROFIL ==== */}
+    {showProfileModal && (
+      <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-[9999]">
+        <div className="bg-white rounded-xl p-6 w-full max-w-sm shadow-lg">
+          <h2 className="text-lg font-bold mb-4">Edit Profil Admin</h2>
+          <form className="flex flex-col gap-2">
+            {["nik", "nama", "role", "cabang", "outlet", "loket"].map((field) => (
               <input
-                type="text"
-                value={item.berat}
-                onChange={(e) => handleHargaChange(i, "berat", e.target.value)}
-                className="w-full p-1 border rounded"
+                key={field}
+                value={userProfile[field]}
+                readOnly
+                className="border p-2 rounded bg-gray-100"
               />
-            </td>
-            <td>
-              <input
-                type="text"
-                value={formatRupiah(item.beli)}
-                onChange={(e) => handleHargaChange(i, "beli", parseRupiah(e.target.value))}
-                className="w-full p-1 border rounded"
-              />
-            </td>
-            <td>
-              <input
-                type="text"
-                value={formatRupiah(item.buyback)}
-                onChange={(e) => handleHargaChange(i, "buyback", parseRupiah(e.target.value))}
-                className="w-full p-1 border rounded"
-              />
-            </td>
-            <td>
+            ))}
+            <div className="flex justify-end mt-2">
               <button
-                onClick={() => handleSaveHarga(i)}
-                className=" text-black text-sm px-2 py-1 rounded hover:bg-yellow-100 mr-2"
+                type="button"
+                onClick={() => setShowProfileModal(false)}
+                className="text-gray-600 hover:underline"
               >
-                💾 Simpan
+                Tutup
               </button>
-              <button
-                onClick={() => handleDeleteHarga(i)}
-                className= "text-black text-sm px-2 py-1 rounded hover:bg-yellow-100"
-              >
-                🗑️ Hapus
-              </button>
-            </td>
-          </tr>
-        ))}
-        </tbody>
-        </table>
+            </div>
+          </form>
+        </div>
+      </div>
+    )}
+
+    {/* ==== TABEL USER ==== */}
+    <div className="bg-white p-4 rounded-lg shadow mb-8">
+      <div className="flex justify-between items-center mb-2">
+        <h2 className="font-semibold">Kelola User</h2>
         <button
-          onClick={handleAddHarga}
-          className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+          onClick={() => {
+            resetForm();
+            setShowModal(true);
+          }}
+          className="bg-green-600 text-white px-3 py-1 rounded"
         >
-          Tambah Baris
+          Tambah User
         </button>
+      </div>
+      <table className="w-full border text-center">
+        <thead className="bg-green-100">
+          <tr>
+            <th>NIK</th>
+            <th>Nama</th>
+            <th>Role</th>
+            <th>Loket</th>
+            <th>Cabang</th>
+            <th>Outlet</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {users.map((user, i) => (
+            <tr key={i} className="border">
+              <td>{user.nik}</td>
+              <td>{user.nama}</td>
+              <td>{user.role}</td>
+              <td>{user.role === "satpam" ? "-" : user.loket}</td>
+              <td>{user.cabang}</td>
+              <td>{user.outlet}</td>
+              <td>
+                <button
+                  onClick={() => handleEditUser(i)}
+                  className="text-blue-600 mr-2 hover:underline"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDeleteUser(i)}
+                  className="text-red-600 hover:underline"
+                >
+                  Hapus
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    {/* ==== MODAL USER ==== */}
+    {showModal && (
+      <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-[9999]">
+        <div className="bg-white rounded-xl p-4 w-full max-w-sm shadow-lg">
+          <h3 className="text-lg font-semibold mb-2">
+            {editingIndex !== null ? "Edit User" : "Tambah User"}
+          </h3>
+          <form onSubmit={handleAddOrUpdateUser} className="flex flex-col gap-2">
+            <input name="nama" value={form.nama} onChange={handleChange} placeholder="Nama" className="border p-2 rounded" />
+            <input name="nik" value={form.nik} onChange={handleChange} placeholder="NIK" className="border p-2 rounded" />
+            <input name="cabang" value={form.cabang} onChange={handleChange} placeholder="Cabang" className="border p-2 rounded" />
+            <input name="outlet" value={form.outlet} onChange={handleChange} placeholder="Outlet" className="border p-2 rounded" />
+            <input name="password" type="password" value={form.password} onChange={handleChange} placeholder="Password" className="border p-2 rounded" />
+            <select name="role" value={form.role} onChange={handleChange} className="border p-2 rounded">
+              <option value="kasir">Kasir</option>
+              <option value="penaksir">Penaksir</option>
+              <option value="satpam">Satpam</option>
+              <option value="admin">Admin</option>
+            </select>
+            {form.role !== "satpam" && (
+              <input name="loket" value={form.loket} onChange={handleChange} placeholder="Loket" className="border p-2 rounded" />
+            )}
+            <div className="flex justify-between mt-2">
+              <button type="submit" className="bg-green-600 text-white px-4 py-1 rounded">Simpan</button>
+              <button type="button" onClick={() => { resetForm(); setShowModal(false); }} className="text-gray-500 hover:underline">Batal</button>
+            </div>
+          </form>
         </div>
+      </div>
+    )}
+
+    {/* ==== STATISTIK & LOG ==== */}
+    <div className="bg-white rounded-xl shadow p-6 mb-8">
+      <h2 className="text-lg font-semibold text-blue-700 mb-4">📊 Statistik & Log Aktivitas</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="border p-4 rounded-lg bg-blue-50">
+          <p>Total Nomor Terakhir Kasir:</p>
+          <p className="text-2xl font-bold text-blue-600">{lastKasir}</p>
         </div>
-  );}
+        <div className="border p-4 rounded-lg bg-blue-50">
+          <p>Total Nomor Terakhir Penaksir:</p>
+          <p className="text-2xl font-bold text-blue-600">{lastPenaksir}</p>
+        </div>
+      </div>
+      <p className="mt-4">
+        Total antrian terpakai: <strong>{lastKasir + lastPenaksir}</strong>
+      </p>
+      <button onClick={resetAntrian} className="mt-3 bg-blue-600 text-white px-4 py-2 rounded">
+        Reset Sekarang
+      </button>
+
+      <div className="mt-6">
+        <h3 className="text-md font-semibold text-gray-700 mb-2">📁 Log Aktivitas Pemanggilan</h3>
+        {logAktivitas.length > 0 ? (
+          <table className="w-full border text-xs text-left">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="p-2">Waktu</th>
+                <th className="p-2">User</th>
+                <th className="p-2">Nomor</th>
+                <th className="p-2">Loket</th>
+                <th className="p-2">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logAktivitas.map((log, index) => (
+                <tr key={index} className="border-b">
+                  <td className="p-2">{new Date(log.waktu).toLocaleString()}</td>
+                  <td className="p-2">{log.user}</td>
+                  <td className="p-2">{log.nomor}</td>
+                  <td className="p-2">{log.loket}</td>
+                  <td className="p-2">{log.aksi}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p className="text-sm text-gray-500">Belum ada aktivitas tercatat.</p>
+        )}
+      </div>
+    </div>
+
+    {/* ==== VIDEO PROMOSI ==== */}
+    <div className="bg-white p-4 rounded-xl shadow-xl mb-8">
+      <h2 className="text-lg font-bold text-gray-800 mb-4">📺 Daftar Video Promosi</h2>
+      {videoList.length > 0 ? (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {videoList.map((video) => (
+            <div key={video._id} className="bg-black rounded-xl overflow-hidden shadow relative">
+              <video
+                src={`http://localhost:5000/uploads/video/${video.filename}`}
+                className="w-full h-40 object-cover"
+                muted
+              />
+              <button
+                onClick={() => handleDeleteVideo(video._id)}
+                className="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded hover:bg-red-700"
+              >
+                Hapus
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-gray-500">Belum ada video yang diupload.</p>
+      )}
+      <div className="mt-4 flex items-center gap-2">
+        <input
+          type="file"
+          accept="video/*"
+          onChange={(e) => setSelectedVideo(e.target.files[0])}
+          className="text-sm"
+        />
+        <button
+          onClick={handleUpload}
+          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+        >
+          Upload
+        </button>
+      </div>
+    </div>
+
+    {/* ==== HARGA EMAS ==== */}
+    <div className="bg-white p-4 rounded-lg shadow mb-8">
+      <h2 className="font-semibold mb-2">Harga Emas</h2>
+      <table className="w-full border text-center text-sm mb-2">
+        <thead className="bg-yellow-100">
+          <tr>
+            <th>Berat</th>
+            <th>Harga Beli</th>
+            <th>Buyback</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {hargaEmas.map((item, i) => (
+            <tr key={i}>
+              <td>
+                <input
+                  type="text"
+                  value={item.berat}
+                  onChange={(e) => handleHargaChange(i, "berat", e.target.value)}
+                  className="w-full p-1 border rounded"
+                />
+              </td>
+              <td>
+                <input
+                  type="text"
+                  value={formatRupiah(item.beli)}
+                  onChange={(e) => handleHargaChange(i, "beli", parseRupiah(e.target.value))}
+                  className="w-full p-1 border rounded"
+                />
+              </td>
+              <td>
+                <input
+                  type="text"
+                  value={formatRupiah(item.buyback)}
+                  onChange={(e) => handleHargaChange(i, "buyback", parseRupiah(e.target.value))}
+                  className="w-full p-1 border rounded"
+                />
+              </td>
+              <td>
+                <button onClick={() => handleSaveHarga(i)} className="text-black text-sm px-2 py-1 rounded hover:bg-yellow-100 mr-2">
+                  💾 Simpan
+                </button>
+                <button onClick={() => handleDeleteHarga(i)} className="text-black text-sm px-2 py-1 rounded hover:bg-yellow-100">
+                  🗑️ Hapus
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <button
+        onClick={handleAddHarga}
+        className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+      >
+        Tambah Baris
+      </button>
+    </div>
+  </div>
+);}

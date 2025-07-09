@@ -1,24 +1,35 @@
-require("dotenv").config(); // WAJIB paling atas
+// ⛳ WAJIB paling atas untuk membaca .env
+require("dotenv").config(); 
 
 const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db");
-const queueRoutes = require("./routes/queueRoutes");
+
+const userRoutes = require("./routes/userRoutes");
+const antrianRoutes = require("./routes/antrianRoutes");
 const videoRoutes = require("./routes/videoRoutes");
+const hargaEmasRoutes = require("./routes/hargaEmasRoutes");
+const queueRoutes = require("./routes/queueRoutes");
 
 const app = express();
+
+// 🔌 Koneksi MongoDB
 connectDB();
 
+// 🧱 Middleware
 app.use(cors());
 app.use(express.json());
 
-// Routes
-app.use("/api/users", require("./routes/userRoutes"));
-app.use("/api/antrian", require("./routes/antrianRoutes"));
-app.use("/uploads", express.static("uploads")); // untuk akses file video statis
-app.use("/api/video", require("./routes/videoRoutes"));
-app.use("/api/harga-emas", require("./routes/hargaEmasRoutes"));
-app.use("/api/queue", queueRoutes);
+// 📦 Static file (video promo dll)
+app.use("/uploads", express.static("uploads"));
 
+// 📡 Routes utama
+app.use("/api/users", userRoutes);               // Login, Register, dll
+app.use("/api/antrian", antrianRoutes);          // Semua API antrian (kasir, penaksir)
+app.use("/api/video", videoRoutes);              // Upload dan daftar video
+app.use("/api/harga-emas", hargaEmasRoutes);     // API harga emas Galeri24
+app.use("/api/queue", queueRoutes);              // (jika ada queue custom)
+
+// 🚀 Mulai server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
