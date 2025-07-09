@@ -27,7 +27,7 @@ exports.registerUser = async (req, res) => {
       nik,
       cabang,
       outlet,
-      loket,
+      loket: role === "satpam" ? "-" : loket,
       role,
       password: hashedPassword,
     });
