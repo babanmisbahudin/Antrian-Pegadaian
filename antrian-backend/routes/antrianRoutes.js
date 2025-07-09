@@ -1,15 +1,14 @@
 const express = require("express");
 const router = express.Router();
 const {
-  getAntrianKasir,
-  panggilAntrian,
+  getLastAntrian,
+  addAntrian,
   resetAntrian,
-  mulaiAntrianAwal,
 } = require("../controllers/antrianController");
 
-router.get("/kasir", getAntrianKasir);
-router.post("/panggil", panggilAntrian);
-router.post("/reset", resetAntrian);
-router.post("/mulai", mulaiAntrianAwal);
+// 🧾 Route Kasir & Penaksir → pakai param `:role` biar efisien
+router.get("/:role/last", getLastAntrian);
+router.post("/:role/next", addAntrian);
+router.delete("/:role/reset", resetAntrian);
 
 module.exports = router;

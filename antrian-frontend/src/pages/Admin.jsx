@@ -10,7 +10,7 @@ export default function Admin() {
   const [editingIndex, setEditingIndex] = useState(null);
   const [users, setUsers] = useState([]);
   const [form, setForm] = useState({
-    nik: "", nama: "", password: "", role: "kasir", loket: "", cabang: "", outlet: ""
+    nik: "", nama: "", password: "", role: "kasir", cabang: "", outlet: ""
   });
   const [logAktivitas, setLogAktivitas] = useState([]);
   const [lastKasir, setLastKasir] = useState(0);
@@ -45,30 +45,28 @@ export default function Admin() {
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const resetForm = () => {
-    setForm({ nik: "", nama: "", password: "", role: "kasir", loket: "", cabang: "", outlet: "" });
+    setForm({ nik: "", nama: "", password: "", role: "kasir", cabang: "", outlet: "" });
     setEditingIndex(null);
   };
 
   const handleAddOrUpdateUser = async (e) => {
     e.preventDefault();
-    const { nik, nama, password, role, loket, cabang, outlet } = form;
+    const { nik, nama, password, role, cabang, outlet } = form;
 
     if (!nik || !nama || (!password && editingIndex === null) || !cabang || !outlet) {
       return alert("Lengkapi semua data!");
     }
 
-    if (role !== "satpam" && !loket.trim()) return alert("Masukkan nomor loket!");
-
     try {
       if (editingIndex !== null) {
         const userId = users[editingIndex]._id;
-        const res = await api.put(`/users/${userId}`, { nik, nama, role, loket, cabang, outlet });
+        const res = await api.put(`/users/${userId}`, { nik, nama, role, cabang, outlet });
         const updated = [...users];
         updated[editingIndex] = res.data;
         setUsers(updated);
         alert("User berhasil diperbarui");
       } else {
-        const res = await api.post("/users/register", { nik, nama, password, role, loket, cabang, outlet });
+        const res = await api.post("/users/register", { nik, nama, password, role, cabang, outlet });
         setUsers([...users, res.data]);
         alert("User berhasil ditambahkan");
       }
@@ -87,7 +85,6 @@ export default function Admin() {
       nik: user.nik,
       nama: user.nama,
       role: user.role,
-      loket: user.loket || "",
       cabang: user.cabang || "",
       outlet: user.outlet || "",
       password: ""
@@ -276,7 +273,7 @@ export default function Admin() {
 };
 
   const userProfile = users.find(u => u.role === "admin") || {
-    nik: "EPS45359", nama: "Admin Utama", role: "admin", cabang: "Majalengka", outlet: "Pusat", loket: "0"
+    nik: "EPS45359", nama: "Admin Utama", role: "admin", cabang: "Majalengka", outlet: "Pusat"
   };
 
   return (
@@ -322,7 +319,7 @@ export default function Admin() {
         <div className="bg-white rounded-xl p-6 w-full max-w-sm shadow-lg">
           <h2 className="text-lg font-bold mb-4">Edit Profil Admin</h2>
           <form className="flex flex-col gap-2">
-            {["nik", "nama", "role", "cabang", "outlet", "loket"].map((field) => (
+            {["nik", "nama", "role", "cabang", "outlet"].map((field) => (
               <input
                 key={field}
                 value={userProfile[field]}
@@ -364,7 +361,6 @@ export default function Admin() {
             <th>NIK</th>
             <th>Nama</th>
             <th>Role</th>
-            <th>Loket</th>
             <th>Cabang</th>
             <th>Outlet</th>
             <th>Aksi</th>
@@ -376,7 +372,6 @@ export default function Admin() {
               <td>{user.nik}</td>
               <td>{user.nama}</td>
               <td>{user.role}</td>
-              <td>{user.role === "satpam" ? "-" : user.loket}</td>
               <td>{user.cabang}</td>
               <td>{user.outlet}</td>
               <td>
@@ -418,9 +413,6 @@ export default function Admin() {
               <option value="satpam">Satpam</option>
               <option value="admin">Admin</option>
             </select>
-            {form.role !== "satpam" && (
-              <input name="loket" value={form.loket} onChange={handleChange} placeholder="Loket" className="border p-2 rounded" />
-            )}
             <div className="flex justify-between mt-2">
               <button type="submit" className="bg-green-600 text-white px-4 py-1 rounded">Simpan</button>
               <button type="button" onClick={() => { resetForm(); setShowModal(false); }} className="text-gray-500 hover:underline">Batal</button>
@@ -459,7 +451,6 @@ export default function Admin() {
                 <th className="p-2">Waktu</th>
                 <th className="p-2">User</th>
                 <th className="p-2">Nomor</th>
-                <th className="p-2">Loket</th>
                 <th className="p-2">Aksi</th>
               </tr>
             </thead>
@@ -469,7 +460,6 @@ export default function Admin() {
                   <td className="p-2">{new Date(log.waktu).toLocaleString()}</td>
                   <td className="p-2">{log.user}</td>
                   <td className="p-2">{log.nomor}</td>
-                  <td className="p-2">{log.loket}</td>
                   <td className="p-2">{log.aksi}</td>
                 </tr>
               ))}

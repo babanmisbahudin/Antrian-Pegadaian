@@ -1,72 +1,65 @@
-const Antrian = require("../models/Antrian");
+const Queue = require("../models/Queue");
 
-// GET /api/antrian/kasir?loket=2
-exports.getAntrianKasir = async (req, res) => {
+const DEFAULT_START = {
+  kasir: 1001,
+  penaksir: 2001,
+};
+
+// Ambil nomor terakhir
+exports.getLastAntrian = async (req, res) => {
+  const { role } = req.params;
+  if (!["kasir", "penaksir"].includes(role)) {
+    return res.status(400).json({ message: "Role tidak valid" });
+  }
+
   try {
-    const loket = parseInt(req.query.loket);
-    const antrian = await Antrian.find({
-      tujuan: "kasir",
-      loket,
-      status: "menunggu",
-    }).sort({ waktu: 1 });
-    res.json(antrian);
-  } catch (error) {
+    const last = await Queue.findOne({ role }).sort({ nomor: -1 });
+    res.json({ nomor: last ? last.nomor : DEFAULT_START[role] - 1 });
+  } catch (err) {
+    console.error(`❌ Gagal ambil last ${role}:`, err);
     res.status(500).json({ message: "Gagal ambil antrian" });
   }
 };
 
-// POST /api/antrian/panggil
-exports.panggilAntrian = async (req, res) => {
+// Tambah antrian baru
+exports.addAntrian = async (req, res) => {
+  const { role } = req.params;
+  const { loket } = req.body;
+
+  if (!["kasir", "penaksir"].includes(role)) {
+    return res.status(400).json({ message: "Role tidak valid" });
+  }
+
   try {
-    const { id, loket } = req.body;
-    await Antrian.findByIdAndUpdate(id, {
-      status: "dipanggil",
-      loket,
+    const last = await Queue.findOne({ role }).sort({ nomor: -1 });
+    const nextNomor = last ? last.nomor + 1 : DEFAULT_START[role];
+
+    const newQueue = new Queue({
+      role,
+      nomor: nextNomor,
+      loket: loket || (role === "kasir" ? "2" : "1"),
     });
-    res.json({ message: "Antrian dipanggil" });
-  } catch (error) {
-    res.status(500).json({ message: "Gagal panggil antrian" });
-  }
-};
 
-// POST /api/antrian/reset
-exports.resetAntrian = async (req, res) => {
-  try {
-    const { id } = req.body;
-    await Antrian.findByIdAndUpdate(id, { status: "batal" });
-    res.json({ message: "Antrian direset" });
-  } catch (error) {
-    res.status(500).json({ message: "Gagal reset antrian" });
-  }
-};
-
-// POST /api/antrian/mulai
-exports.mulaiAntrianAwal = async (req, res) => {
-  try {
-    const {
-      jumlah = 10,
-      prefix = "K",
-      start = 101,
-      tujuan = "kasir",
-      loket = 2,
-    } = req.body;
-
-    const antreanBaru = [];
-
-    for (let i = 0; i < jumlah; i++) {
-      const nomor = `${prefix}-${start + i}`;
-      antreanBaru.push({
-        nomor,
-        tujuan,
-        loket,
-        status: "menunggu",
-        waktu: new Date(),
-      });
-    }
-
-    const hasil = await Antrian.insertMany(antreanBaru);
-    res.json({ message: "Antrian awal berhasil dimulai", data: hasil });
+    await newQueue.save();
+    res.status(201).json(newQueue);
   } catch (err) {
-    res.status(500).json({ message: "Gagal mulai antrian awal" });
+    console.error(`❌ Gagal tambah antrian ${role}:`, err);
+    res.status(500).json({ message: "Gagal tambah antrian" });
+  }
+};
+
+// Reset antrian
+exports.resetAntrian = async (req, res) => {
+  const { role } = req.params;
+  if (!["kasir", "penaksir"].includes(role)) {
+    return res.status(400).json({ message: "Role tidak valid" });
+  }
+
+  try {
+    await Queue.deleteMany({ role });
+    res.json({ message: `Berhasil reset antrian ${role}` });
+  } catch (err) {
+    console.error(`❌ Gagal reset antrian ${role}:`, err);
+    res.status(500).json({ message: "Gagal reset antrian" });
   }
 };

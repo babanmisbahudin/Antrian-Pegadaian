@@ -1,19 +1,17 @@
 const express = require("express");
 const router = express.Router();
 const {
-  registerUser,
   loginUser,
+  registerUser,
   getAllUsers,
+  updateUser,
+  deleteUser,
 } = require("../controllers/userController");
 
-const { protect, adminOnly } = require("../middleware/authMiddleware");
-const { deleteUser } = require("../controllers/userController");
-const { updateUser } = require("../controllers/userController");
-
-router.post("/register", protect, adminOnly, registerUser); // hanya admin bisa tambah user
 router.post("/login", loginUser);
-router.get("/", protect, adminOnly, getAllUsers); // ambil semua user
-router.delete("/:id", protect, adminOnly, deleteUser);
-router.put("/:id", protect, adminOnly, updateUser);
+router.post("/register", registerUser);
+router.get("/", getAllUsers);
+router.put("/:id", updateUser);
+router.delete("/:id", deleteUser);
 
 module.exports = router;

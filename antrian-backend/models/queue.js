@@ -1,8 +1,23 @@
 const mongoose = require("mongoose");
 
 const queueSchema = new mongoose.Schema({
-  lastKasir: { type: Number, default: 0 },
-  lastPenaksir: { type: Number, default: 0 }
+  role: {
+    type: String,
+    enum: ["kasir", "penaksir"],
+    required: true,
+  },
+  nomor: {
+    type: Number,
+    required: true,
+  },
+  loket: {
+    type: String,
+    required: true,
+  },
+  waktu: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
-module.exports = mongoose.model("Queue", queueSchema);
+module.exports = mongoose.models.Queue || mongoose.model("Queue", queueSchema);

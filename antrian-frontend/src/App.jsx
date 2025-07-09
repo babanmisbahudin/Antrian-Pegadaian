@@ -1,24 +1,51 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import Home from './pages/Home'
-import Login from './pages/Login'
-import Kasir from './pages/Kasir.jsx'
-import Penaksir from './pages/Penaksir'
-import Satpam from './pages/Satpam'
-import Admin from './pages/Admin'
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import ProtectedRoute from "./components/ProtectedRoute";
 
-function App() {
+import Login from "./pages/Login";
+import Admin from "./pages/Admin";
+import Kasir from "./pages/Kasir";
+import Penaksir from "./pages/Penaksir";
+import Satpam from "./pages/Satpam";
+
+export default function App() {
   return (
-    <BrowserRouter>
+    <Router>
       <Routes>
-        <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/kasir" element={<Kasir />} />
-        <Route path="/penaksir" element={<Penaksir />} />
-        <Route path="/satpam" element={<Satpam />} />
-        <Route path="/admin" element={<Admin />} />
-      </Routes>
-    </BrowserRouter>
-  )
-}
 
-export default App
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <Admin />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/kasir"
+          element={
+            <ProtectedRoute allowedRoles={["kasir", "admin"]}>
+              <Kasir />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/penaksir"
+          element={
+            <ProtectedRoute allowedRoles={["penaksir", "admin"]}>
+              <Penaksir />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/satpam"
+          element={
+            <ProtectedRoute allowedRoles={["satpam", "admin"]}>
+              <Satpam />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </Router>
+  );
+}

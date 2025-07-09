@@ -25,10 +25,10 @@ app.use("/uploads", express.static("uploads"));
 
 // 📡 Routes utama
 app.use("/api/users", userRoutes);               // Login, Register, dll
-app.use("/api/antrian", antrianRoutes);          // Semua API antrian (kasir, penaksir)
-app.use("/api/video", videoRoutes);              // Upload dan daftar video
-app.use("/api/harga-emas", hargaEmasRoutes);     // API harga emas Galeri24
-app.use("/api/queue", queueRoutes);              // (jika ada queue custom)
+app.use("/api/antrian", antrianRoutes);          
+app.use("/api/video", videoRoutes);              
+app.use("/api/harga-emas", hargaEmasRoutes);     
+app.use("/api/queue", queueRoutes);              
 
 // 🚀 Mulai server
 const PORT = process.env.PORT || 5000;
