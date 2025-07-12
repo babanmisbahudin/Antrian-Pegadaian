@@ -1,18 +1,23 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-import Login from "./pages/Login";
-import Admin from "./pages/Admin";
-import Kasir from "./pages/Kasir";
-import Penaksir from "./pages/Penaksir";
-import Satpam from "./pages/Satpam";
+import Home from "./pages/Home";       // Halaman display publik (antrian, video, harga emas)
+import Login from "./pages/Login";     // Halaman login
+import Admin from "./pages/Admin";     // Dashboard admin
+import Kasir from "./pages/Kasir";     // Halaman kasir
+import Penaksir from "./pages/Penaksir"; // Halaman penaksir
+import Satpam from "./pages/Satpam";   // Halaman satpam
 
 export default function App() {
   return (
     <Router>
       <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={<Navigate to="/home" />} />
+        <Route path="/home" element={<Home />} />
         <Route path="/login" element={<Login />} />
 
+        {/* Protected Routes */}
         <Route
           path="/admin"
           element={
@@ -45,6 +50,9 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+        
+        {/* Optional: jika route tidak ditemukan */}
+        <Route path="*" element={<div className="p-6 text-center">Halaman tidak ditemukan</div>} />
       </Routes>
     </Router>
   );

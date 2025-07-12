@@ -1,12 +1,14 @@
 const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
-  nik: { type: String, required: true, unique: true },
-  nama: { type: String, required: true },
-  password: { type: String, required: true },
-  role: { type: String, required: true },
-  cabang: { type: String },
-  outlet: { type: String },
+  nama: String,
+  nik: String,
+  cabang: String,
+  outlet: String,
+  loket: String,
+  role: String,
+  password: String,
 });
 
-module.exports = mongoose.model("User", userSchema);
+// ✅ Cek dulu, kalau model "User" sudah ada, pakai itu
+module.exports = mongoose.models.User || mongoose.model("User", userSchema);

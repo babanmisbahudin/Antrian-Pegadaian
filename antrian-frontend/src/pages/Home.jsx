@@ -19,7 +19,7 @@ export default function Home() {
         const res = await api.get("/harga-emas");
         setHargaEmas(res.data);
       } catch (err) {
-        console.error("Gagal ambil harga emas:", err);
+        console.error("❌ Gagal ambil harga emas:", err);
       }
     };
 
@@ -53,7 +53,7 @@ export default function Home() {
       {/* HEADER */}
       <div className="flex justify-between items-center px-6 py-3 bg-white shadow border-b border-gray-200">
         <h1 className="text-xl font-bold text-green-800">Pegadaian Cabang Majalengka</h1>
-        <span className="text-sm font-medium text-gray-700">DI Buat @himisbah</span>
+        <span className="text-sm font-medium text-gray-700">Di buat @himisbah</span>
       </div>
 
       {/* ANTRIAN & VIDEO */}
@@ -72,10 +72,10 @@ export default function Home() {
 
         {/* Video Promosi */}
         <div className="w-full lg:w-1/2 rounded-2xl overflow-hidden shadow-xl bg-black h-[300px] flex items-center justify-center">
-          {currentVideo && currentVideo.filename ? (
+          {currentVideo?.filename ? (
             <video
               key={currentVideoIndex}
-              src={`http://localhost:5000/uploads/video/${currentVideo.filename}`}
+              src={`http://localhost:5000/uploads/${currentVideo.filename}`}
               className="w-full h-full object-cover"
               autoPlay
               muted
