@@ -46,7 +46,12 @@ export default function Home() {
     };
   }, []);
 
-  const currentVideo = videoList[currentVideoIndex];
+  const currentVideo =
+    Array.isArray(videoList) &&
+    videoList.length > 0 &&
+    videoList[currentVideoIndex]?.filename
+      ? videoList[currentVideoIndex]
+      : null;
 
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900 flex flex-col">
@@ -72,10 +77,10 @@ export default function Home() {
 
         {/* Video Promosi */}
         <div className="w-full lg:w-1/2 rounded-2xl overflow-hidden shadow-xl bg-black h-[300px] flex items-center justify-center">
-          {currentVideo?.filename ? (
+          {currentVideo ? (
             <video
               key={currentVideoIndex}
-              src={`http://localhost:5000/uploads/${currentVideo.filename}`}
+              src={`http://localhost:5000/uploads/video/${currentVideo.filename}`}
               className="w-full h-full object-cover"
               autoPlay
               muted
@@ -86,7 +91,9 @@ export default function Home() {
             />
           ) : (
             <div className="text-white text-center p-4">
-              {videoList.length === 0 ? "Belum ada video promosi" : "Video tidak ditemukan"}
+              {videoList.length === 0
+                ? "Belum ada video promosi"
+                : "Video tidak ditemukan atau rusak"}
             </div>
           )}
         </div>
