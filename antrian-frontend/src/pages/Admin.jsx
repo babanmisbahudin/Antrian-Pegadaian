@@ -110,7 +110,7 @@ export default function Admin() {
 
   const fetchStatistik = async () => {
     try {
-      const res = await api.get("/antrian/statistik");
+      const res = await api.get("/queue");
       setLastKasir(res.data.lastKasir || 0);
       setLastPenaksir(res.data.lastPenaksir || 0);
     } catch (err) {
@@ -120,7 +120,7 @@ export default function Admin() {
 
   const fetchLogAktivitas = async () => {
     try {
-      const res = await api.get("/log");
+      const res = await api.get("/queue/log");
       setLogAktivitas(res.data);
     } catch (err) {
       console.error("Gagal ambil log aktivitas:", err);
@@ -132,7 +132,7 @@ export default function Admin() {
     if (!konfirmasi) return;
 
     try {
-      await api.post("/antrian/reset");
+      await api.post("/queue/reset");
       alert("Nomor antrian berhasil direset.");
       fetchStatistik();
       fetchLogAktivitas();

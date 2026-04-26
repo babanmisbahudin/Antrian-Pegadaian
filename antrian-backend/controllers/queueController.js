@@ -15,7 +15,6 @@ exports.callQueue = async (req, res) => {
   try {
     const counterField = role === "kasir" ? "lastKasir" : "lastPenaksir";
 
-    // Atomic increment - tidak ada race condition
     const counter = await QueueCounter.findOneAndUpdate(
       {},
       { $inc: { [counterField]: 1 } },
@@ -27,11 +26,17 @@ exports.callQueue = async (req, res) => {
         ? `A${counter[counterField].toString().padStart(3, "0")}`
         : `P${counter[counterField].toString().padStart(3, "0")}`;
 
-    const newQueue = await Queue.create({ role, nomor, loket });
+    const newQueue = await Queue.create({
+      role,
+      nomor,
+      loket,
+      status: "called",
+      dipanggilOleh: req.user?._id || null,
+    });
 
     res.json({ message: "Antrian dipanggil", data: newQueue });
   } catch (err) {
-    console.error("❌ Error callQueue:", err);
+    console.error("Error callQueue:", err);
     res.status(500).json({ message: "Gagal memanggil antrian" });
   }
 };
@@ -39,13 +44,33 @@ exports.callQueue = async (req, res) => {
 exports.getLastCalled = async (req, res) => {
   try {
     const [lastKasir, lastPenaksir] = await Promise.all([
-      Queue.findOne({ role: "kasir" }).sort({ waktu: -1 }),
-      Queue.findOne({ role: "penaksir" }).sort({ waktu: -1 }),
+      Queue.findOne({ role: "kasir", status: "called" }).sort({ waktu: -1 }),
+      Queue.findOne({ role: "penaksir", status: "called" }).sort({ waktu: -1 }),
     ]);
     res.json({ kasir: lastKasir || null, penaksir: lastPenaksir || null });
   } catch (err) {
-    console.error("❌ Error getLastCalled:", err);
+    console.error("Error getLastCalled:", err);
     res.status(500).json({ message: "Gagal ambil antrian terakhir" });
+  }
+};
+
+exports.getQueueLog = async (req, res) => {
+  try {
+    const logs = await Queue.find({ status: "called" })
+      .sort({ waktu: -1 })
+      .limit(100)
+      .populate("dipanggilOleh", "nama role");
+    const formatted = logs.map((l) => ({
+      waktu: l.waktu,
+      nomor: l.nomor,
+      loket: l.loket,
+      role: l.role,
+      user: l.dipanggilOleh ? l.dipanggilOleh.nama : l.role,
+      aksi: "Dipanggil",
+    }));
+    res.json(formatted);
+  } catch (err) {
+    res.status(500).json({ message: "Gagal ambil log" });
   }
 };
 
@@ -65,7 +90,7 @@ exports.resetQueue = async (req, res) => {
   try {
     const queue = await QueueCounter.findOneAndUpdate(
       {},
-      { lastKasir: 0, lastPenaksir: 0 },
+      { lastKasir: 0, lastPenaksir: 0, lastKasirAntrian: 0, lastPenaksirAntrian: 0 },
       { new: true, upsert: true }
     );
     await Queue.deleteMany({});
