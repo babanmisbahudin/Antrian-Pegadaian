@@ -10,7 +10,7 @@ export default function Admin() {
   const [editingIndex, setEditingIndex] = useState(null);
   const [users, setUsers] = useState([]);
   const [form, setForm] = useState({
-    nik: "", nama: "", password: "", role: "kasir", cabang: "", outlet: ""
+    nik: "", nama: "", password: "", role: "kasir", cabang: "", outlet: "", loket: ""
   });
   const [logAktivitas, setLogAktivitas] = useState([]);
   const [lastKasir, setLastKasir] = useState(0);
@@ -34,6 +34,9 @@ export default function Admin() {
 
         const hargaRes = await api.get("/harga-emas");
         setHargaEmas(hargaRes.data);
+
+        const logRes = await api.get("/queue/log");
+        setLogAktivitas(logRes.data);
       } catch (err) {
         console.error("Gagal ambil data:", err);
         alert("Gagal mengambil data dari server.");
@@ -45,13 +48,13 @@ export default function Admin() {
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const resetForm = () => {
-    setForm({ nik: "", nama: "", password: "", role: "kasir", cabang: "", outlet: "" });
+    setForm({ nik: "", nama: "", password: "", role: "kasir", cabang: "", outlet: "", loket: "" });
     setEditingIndex(null);
   };
 
   const handleAddOrUpdateUser = async (e) => {
     e.preventDefault();
-    const { nik, nama, password, role, cabang, outlet } = form;
+    const { nik, nama, password, role, cabang, outlet, loket } = form;
 
     if (!nik || !nama || (!password && editingIndex === null) || !cabang || !outlet) {
       return alert("Lengkapi semua data!");
@@ -60,13 +63,13 @@ export default function Admin() {
     try {
       if (editingIndex !== null) {
         const userId = users[editingIndex]._id;
-        const res = await api.put(`/users/${userId}`, { nik, nama, role, cabang, outlet });
+        const res = await api.put(`/users/${userId}`, { nik, nama, role, cabang, outlet, loket });
         const updated = [...users];
         updated[editingIndex] = res.data;
         setUsers(updated);
         alert("User berhasil diperbarui");
       } else {
-        const res = await api.post("/users/register", { nik, nama, password, role, cabang, outlet });
+        const res = await api.post("/users/register", { nik, nama, password, role, cabang, outlet, loket });
         setUsers([...users, res.data]);
         alert("User berhasil ditambahkan");
       }
@@ -87,6 +90,7 @@ export default function Admin() {
       role: user.role,
       cabang: user.cabang || "",
       outlet: user.outlet || "",
+      loket: user.loket || "",
       password: ""
     });
     setEditingIndex(index);
@@ -365,6 +369,7 @@ export default function Admin() {
             <th>Role</th>
             <th>Cabang</th>
             <th>Outlet</th>
+            <th>Loket</th>
             <th>Aksi</th>
           </tr>
         </thead>
@@ -376,6 +381,7 @@ export default function Admin() {
               <td>{user.role}</td>
               <td>{user.cabang}</td>
               <td>{user.outlet}</td>
+              <td>{user.loket || "-"}</td>
               <td>
                 <button
                   onClick={() => handleEditUser(i)}
@@ -415,6 +421,15 @@ export default function Admin() {
               <option value="satpam">Satpam</option>
               <option value="admin">Admin</option>
             </select>
+            {(form.role === "kasir" || form.role === "penaksir") && (
+              <input
+                name="loket"
+                value={form.loket}
+                onChange={handleChange}
+                placeholder={`Nomor Loket (contoh: ${form.role === "kasir" ? "2" : "1"})`}
+                className="border p-2 rounded"
+              />
+            )}
             <div className="flex justify-between mt-2">
               <button type="submit" className="bg-green-600 text-white px-4 py-1 rounded">Simpan</button>
               <button type="button" onClick={() => { resetForm(); setShowModal(false); }} className="text-gray-500 hover:underline">Batal</button>
