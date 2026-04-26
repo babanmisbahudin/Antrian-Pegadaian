@@ -4,23 +4,13 @@ const {
   getAllHarga,
   addHarga,
   updateHarga,
-  deleteHarga
+  deleteHarga,
 } = require("../controllers/hargaEmasController");
+const { protect, adminOnly } = require("../middleware/authMiddleware");
 
-// [GET] Ambil semua data harga emas
-// Endpoint: GET /api/harga-emas
 router.get("/", getAllHarga);
-
-// [POST] Tambah satu data harga emas baru
-// Endpoint: POST /api/harga-emas
-router.post("/", addHarga);
-
-// [PUT] Update satu data harga emas berdasarkan _id (di body)
-// Endpoint: PUT /api/harga-emas
-router.put("/", updateHarga);
-
-// [DELETE] Hapus satu data harga emas berdasarkan :id
-// Endpoint: DELETE /api/harga-emas/:id
-router.delete("/:id", deleteHarga);
+router.post("/", protect, adminOnly, addHarga);
+router.put("/:id", protect, adminOnly, updateHarga);
+router.delete("/:id", protect, adminOnly, deleteHarga);
 
 module.exports = router;

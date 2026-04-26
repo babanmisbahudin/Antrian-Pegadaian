@@ -5,10 +5,10 @@ const {
   addAntrian,
   resetAntrian,
 } = require("../controllers/antrianController");
+const { protect, adminOnly } = require("../middleware/authMiddleware");
 
-// 🧾 Route Kasir & Penaksir → pakai param `:role` biar efisien
 router.get("/:role/last", getLastAntrian);
-router.post("/:role/next", addAntrian);
-router.delete("/:role/reset", resetAntrian);
+router.post("/:role/next", protect, addAntrian);
+router.delete("/:role/reset", protect, adminOnly, resetAntrian);
 
 module.exports = router;

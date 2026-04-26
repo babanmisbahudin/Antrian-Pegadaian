@@ -1,14 +1,18 @@
 const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
-  nama: String,
-  nik: String,
-  cabang: String,
-  outlet: String,
-  loket: String,
-  role: String,
-  password: String,
+  nama: { type: String, required: true },
+  nik: { type: String, required: true, unique: true },
+  cabang: { type: String, default: "" },
+  outlet: { type: String, default: "" },
+  loket: { type: String, default: "-" },
+  role: {
+    type: String,
+    required: true,
+    enum: ["admin", "kasir", "penaksir", "satpam"],
+    default: "kasir",
+  },
+  password: { type: String, required: true },
 });
 
-// ✅ Cek dulu, kalau model "User" sudah ada, pakai itu
 module.exports = mongoose.models.User || mongoose.model("User", userSchema);

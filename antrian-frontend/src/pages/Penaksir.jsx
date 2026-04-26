@@ -1,27 +1,42 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import api from "../api/api";
 
 export default function Penaksir() {
-  const [queue, setQueue] = useState(["P-001", "P-002", "P-003"]);
-  const [current, setCurrent] = useState("-");
+  const navigate = useNavigate();
+  const [current, setCurrent] = useState(null);
+  const [loket, setLoket] = useState("1");
   const [voices, setVoices] = useState([]);
-  const loket = 1;
+  const [loading, setLoading] = useState(false);
+  const didInit = useRef(false);
 
   useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    if (!user || user.role?.toLowerCase() !== "penaksir") {
+      alert("Silakan login sebagai penaksir terlebih dahulu.");
+      navigate("/login");
+      return;
+    }
+    setLoket(user.loket || "1");
+  }, []);
+
+  useEffect(() => {
+    if (didInit.current) return;
+    didInit.current = true;
+
     const loadVoices = () => {
       const available = window.speechSynthesis.getVoices();
       setVoices(available);
     };
-
     if (window.speechSynthesis.onvoiceschanged !== undefined) {
       window.speechSynthesis.onvoiceschanged = loadVoices;
     }
-
     loadVoices();
   }, []);
 
   const speak = (text, callback) => {
     const utter = new SpeechSynthesisUtterance(text);
-    const voice = voices.find(v => v.lang === "id-ID") || voices[0];
+    const voice = voices.find((v) => v.lang === "id-ID") || voices[0];
     if (voice) utter.voice = voice;
     if (callback) utter.onend = callback;
     window.speechSynthesis.speak(utter);
@@ -29,28 +44,31 @@ export default function Penaksir() {
 
   const callNumber = (nomor) => {
     speak("Perhatian. Akan dipanggil.", () => {
-      speak(`Nomor antrian ${nomor.replace("-", " ")}, silakan ke loket ${loket}`);
+      speak(`Nomor antrian ${nomor.replace(/(\w)(\d+)/, "$1 $2")}, silakan ke loket ${loket}`);
     });
   };
 
-  const handleNext = () => {
-    if (queue.length === 0) {
-      alert("Antrian habis.");
-      return;
+  const handleNext = async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const res = await api.post("/queue/call", { role: "penaksir", loket });
+      const data = res.data.data;
+      setCurrent(data);
+      callNumber(data.nomor);
+    } catch (err) {
+      alert("Gagal memanggil antrian: " + (err?.response?.data?.message || "Coba lagi."));
+    } finally {
+      setLoading(false);
     }
-
-    const next = queue[0];
-    setCurrent(next);
-    setQueue(queue.slice(1));
-    callNumber(next);
   };
 
   const handleRepeat = () => {
-    if (current === "-") {
+    if (!current) {
       alert("Belum ada nomor yang dipanggil.");
       return;
     }
-    callNumber(current);
+    callNumber(current.nomor);
   };
 
   return (
@@ -62,16 +80,22 @@ export default function Penaksir() {
 
         <div className="bg-green-200 border border-green-400 rounded-xl py-6 px-4 mb-6 text-center shadow-inner">
           <p className="text-sm text-gray-600 mb-1 uppercase">Sedang Dilayani</p>
-          <p className="text-6xl font-bold text-green-800 tracking-widest">{current}</p>
+          <p className="text-6xl font-bold text-green-800 tracking-widest">
+            {current ? current.nomor : "-"}
+          </p>
         </div>
 
         <div className="flex flex-col gap-3 mb-6">
           <button
             onClick={handleNext}
-            className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl text-lg shadow-md transition"
+            disabled={loading}
+            className={`${
+              loading ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"
+            } text-white font-bold py-3 rounded-xl text-lg shadow-md transition`}
           >
-            ➕ Panggil Antrian Berikutnya
+            {loading ? "Memproses..." : current ? "➕ Panggil Antrian Berikutnya" : "▶️ Mulai Antrian"}
           </button>
+
           <button
             onClick={handleRepeat}
             className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 rounded-xl text-sm shadow-inner"
@@ -80,22 +104,10 @@ export default function Penaksir() {
           </button>
         </div>
 
-        <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-4 shadow-inner">
-          <p className="text-sm font-semibold text-gray-600 mb-2">Antrian Selanjutnya:</p>
-          {queue.length > 0 ? (
-            <ul className="space-y-1">
-              {queue.map((no, i) => (
-                <li
-                  key={i}
-                  className="text-gray-800 font-mono text-sm bg-white px-3 py-1 rounded-md shadow-sm border border-gray-100"
-                >
-                  {no}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-gray-400 text-sm italic">Tidak ada antrian lagi.</p>
-          )}
+        <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-4 shadow-inner text-center">
+          <p className="text-sm font-semibold text-gray-600">
+            Tekan tombol untuk memanggil nomor antrian berikutnya
+          </p>
         </div>
       </div>
     </div>

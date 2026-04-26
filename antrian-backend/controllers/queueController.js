@@ -1,7 +1,6 @@
 const QueueCounter = require("../models/QueueCounter");
 const Queue = require("../models/queue");
 
-// POST /api/queue/call
 exports.callQueue = async (req, res) => {
   const { role, loket } = req.body;
 
@@ -9,32 +8,26 @@ exports.callQueue = async (req, res) => {
     return res.status(400).json({ message: "Role tidak valid" });
   }
 
+  if (!loket) {
+    return res.status(400).json({ message: "Loket wajib diisi" });
+  }
+
   try {
-    await initQueueIfNotExists();
+    const counterField = role === "kasir" ? "lastKasir" : "lastPenaksir";
 
-    const counter = await QueueCounter.findOne();
+    // Atomic increment - tidak ada race condition
+    const counter = await QueueCounter.findOneAndUpdate(
+      {},
+      { $inc: { [counterField]: 1 } },
+      { new: true, upsert: true }
+    );
 
-    // Update nomor sesuai role
-    if (role === "kasir") {
-      counter.lastKasir += 1;
-    } else if (role === "penaksir") {
-      counter.lastPenaksir += 1;
-    }
-
-    await counter.save();
-
-    // Nomor antrian: format A001, A002, ...
     const nomor =
       role === "kasir"
-        ? `A${counter.lastKasir.toString().padStart(3, "0")}`
-        : `P${counter.lastPenaksir.toString().padStart(3, "0")}`;
+        ? `A${counter[counterField].toString().padStart(3, "0")}`
+        : `P${counter[counterField].toString().padStart(3, "0")}`;
 
-    // Simpan ke log antrian
-    const newQueue = await Queue.create({
-      role,
-      nomor,
-      loket,
-    });
+    const newQueue = await Queue.create({ role, nomor, loket });
 
     res.json({ message: "Antrian dipanggil", data: newQueue });
   } catch (err) {
@@ -43,28 +36,25 @@ exports.callQueue = async (req, res) => {
   }
 };
 
-// GET /api/queue/terakhir
 exports.getLastCalled = async (req, res) => {
   try {
-    const latest = await Queue.find().sort({ waktu: -1 }).limit(1);
-    res.json(latest[0] || null);
+    const [lastKasir, lastPenaksir] = await Promise.all([
+      Queue.findOne({ role: "kasir" }).sort({ waktu: -1 }),
+      Queue.findOne({ role: "penaksir" }).sort({ waktu: -1 }),
+    ]);
+    res.json({ kasir: lastKasir || null, penaksir: lastPenaksir || null });
   } catch (err) {
     console.error("❌ Error getLastCalled:", err);
     res.status(500).json({ message: "Gagal ambil antrian terakhir" });
   }
 };
 
-const initQueueIfNotExists = async () => {
-  const existing = await QueueCounter.findOne();
-  if (!existing) {
-    await QueueCounter.create({ lastKasir: 0, lastPenaksir: 0 });
-  }
-};
-
 exports.getQueueStatus = async (req, res) => {
   try {
-    await initQueueIfNotExists();
-    const queue = await QueueCounter.findOne().select("-__v");
+    let queue = await QueueCounter.findOne().select("-__v");
+    if (!queue) {
+      queue = await QueueCounter.create({ lastKasir: 0, lastPenaksir: 0 });
+    }
     res.json(queue);
   } catch (err) {
     res.status(500).json({ message: "Gagal ambil data antrian" });
@@ -73,12 +63,12 @@ exports.getQueueStatus = async (req, res) => {
 
 exports.resetQueue = async (req, res) => {
   try {
-    await initQueueIfNotExists();
-    const queue = await QueueCounter.findOne();
-    queue.lastKasir = 0;
-    queue.lastPenaksir = 0;
-    await queue.save();
-
+    const queue = await QueueCounter.findOneAndUpdate(
+      {},
+      { lastKasir: 0, lastPenaksir: 0 },
+      { new: true, upsert: true }
+    );
+    await Queue.deleteMany({});
     res.json({ message: "Antrian berhasil direset", queue });
   } catch (err) {
     res.status(500).json({ message: "Gagal reset antrian" });

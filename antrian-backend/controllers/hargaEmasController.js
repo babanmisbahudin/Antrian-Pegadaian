@@ -32,18 +32,22 @@ exports.addHarga = async (req, res) => {
 
 // Update data harga emas (per baris)
 exports.updateHarga = async (req, res) => {
-  const { _id, berat, beli, buyback } = req.body;
+  const { berat, beli, buyback } = req.body;
+  const id = req.params.id;
 
-  if (!_id || !berat || berat.trim() === "" || isNaN(beli) || isNaN(buyback)) {
+  if (!id || !berat || berat.trim() === "" || isNaN(beli) || isNaN(buyback)) {
     return res.status(400).json({ message: "Data tidak lengkap atau salah format" });
   }
 
   try {
     const updated = await HargaEmas.findByIdAndUpdate(
-      _id,
+      id,
       { berat: berat.trim(), beli, buyback },
       { new: true }
     );
+    if (!updated) {
+      return res.status(404).json({ message: "Data tidak ditemukan" });
+    }
     res.json(updated);
   } catch (err) {
     console.error("Gagal update harga emas:", err);

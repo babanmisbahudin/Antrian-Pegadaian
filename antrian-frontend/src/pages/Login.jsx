@@ -1,6 +1,6 @@
 import { useState } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import api from "../api/api";
 
 export default function Login() {
   const [nik, setNik] = useState("");
@@ -10,22 +10,12 @@ export default function Login() {
   const navigate = useNavigate();
 
   const redirectUserByRole = (role) => {
-    const roleLower = role.toLowerCase();
-    switch (roleLower) {
-      case "admin":
-        navigate("/admin");
-        break;
-      case "kasir":
-        navigate("/kasir");
-        break;
-      case "penaksir":
-        navigate("/penaksir");
-        break;
-      case "satpam":
-        navigate("/satpam");
-        break;
-      default:
-        alert("Peran tidak dikenali.");
+    switch (role.toLowerCase()) {
+      case "admin":     navigate("/admin"); break;
+      case "kasir":     navigate("/kasir"); break;
+      case "penaksir":  navigate("/penaksir"); break;
+      case "satpam":    navigate("/satpam"); break;
+      default:          alert("Peran tidak dikenali.");
     }
   };
 
@@ -38,15 +28,8 @@ export default function Login() {
     }
 
     setLoading(true);
-
     try {
-      const res = await axios.post("http://localhost:5000/api/users/login", {
-        nik,
-        password,
-      });
-
-      console.log("RESPON LOGIN:", res.data);
-
+      const res = await api.post("/users/login", { nik, password });
       const { token, role } = res.data;
 
       if (!token || typeof role !== "string") {
@@ -54,23 +37,11 @@ export default function Login() {
         return;
       }
 
-      // Simpan ke localStorage
       localStorage.setItem("token", token);
       localStorage.setItem("role", role);
-      localStorage.setItem(
-        "user",
-        JSON.stringify({
-          _id: res.data._id,
-          nama: res.data.nama,
-          role: res.data.role,
-        })
-      );
+      localStorage.setItem("user", JSON.stringify(res.data));
 
-
-      // Redirect berdasarkan role
-      setTimeout(() => {
-        redirectUserByRole(role);
-      }, 100);
+      setTimeout(() => redirectUserByRole(role), 100);
     } catch (err) {
       alert("Login gagal: " + (err?.response?.data?.message || "Terjadi kesalahan."));
     } finally {

@@ -1,3 +1,5 @@
+const mongoose = require("mongoose");
+
 const queueSchema = new mongoose.Schema({
   role: {
     type: String,
@@ -5,7 +7,7 @@ const queueSchema = new mongoose.Schema({
     required: true,
   },
   nomor: {
-    type: Number,
+    type: String,
     required: true,
   },
   loket: {
@@ -26,3 +28,5 @@ const queueSchema = new mongoose.Schema({
     default: Date.now,
   },
 });
+
+module.exports = mongoose.models.Queue || mongoose.model("Queue", queueSchema);

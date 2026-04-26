@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../api/api";
+import api, { getUploadsUrl } from "../api/api";
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -301,7 +301,9 @@ export default function Admin() {
             </button>
             <button
               onClick={() => {
-                localStorage.removeItem("isLoggedIn");
+                localStorage.removeItem("token");
+                localStorage.removeItem("role");
+                localStorage.removeItem("user");
                 navigate("/login");
               }}
               className="block px-4 py-2 hover:bg-gray-100 w-full text-left text-red-600"
@@ -479,7 +481,7 @@ export default function Admin() {
           {videoList.map((video) => (
             <div key={video._id} className="bg-black rounded-xl overflow-hidden shadow relative">
               <video
-                src={`http://localhost:5000/uploads/video/${video.filename}`}
+                src={`${getUploadsUrl()}/uploads/video/${video.filename}`}
                 className="w-full h-40 object-cover"
                 muted
               />

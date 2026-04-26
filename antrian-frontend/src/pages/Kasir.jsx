@@ -4,29 +4,25 @@ import api from "../api/api";
 
 export default function Kasir() {
   const navigate = useNavigate();
-  const [queue, setQueue] = useState([]);
   const [current, setCurrent] = useState(null);
   const [loket, setLoket] = useState("-");
   const [voices, setVoices] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const didFetch = useRef(false);
+  const [loading, setLoading] = useState(false);
+  const didInit = useRef(false);
 
-  // ⛔ Cek login dan role
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
     if (!user || user.role?.toLowerCase() !== "kasir") {
       alert("Silakan login sebagai kasir terlebih dahulu.");
       navigate("/login");
-    } else {
-      localStorage.setItem("loketKasir", user.loket || "2");
-      setLoket(user.loket || "2");
+      return;
     }
+    setLoket(user.loket || "2");
   }, []);
 
-  // 🔊 Load suara & antrian awal
   useEffect(() => {
-    if (didFetch.current) return;
-    didFetch.current = true;
+    if (didInit.current) return;
+    didInit.current = true;
 
     const loadVoices = () => {
       const available = window.speechSynthesis.getVoices();
@@ -36,25 +32,8 @@ export default function Kasir() {
       window.speechSynthesis.onvoiceschanged = loadVoices;
     }
     loadVoices();
-
-    const savedLoket = localStorage.getItem("loketKasir") || "2";
-    fetchQueue(savedLoket);
   }, []);
 
-  // 🚀 Ambil data antrian dari backend
-  const fetchQueue = async (loketNum) => {
-    try {
-      setLoading(true);
-      const res = await api.get(`/antrian/kasir?loket=${loketNum}`);
-      setQueue(res.data || []);
-    } catch (err) {
-      console.error("Gagal ambil antrian:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 🔈 Fungsi untuk bicara
   const speak = (text, callback) => {
     const utter = new SpeechSynthesisUtterance(text);
     const voice = voices.find((v) => v.lang === "id-ID") || voices[0];
@@ -63,41 +42,27 @@ export default function Kasir() {
     window.speechSynthesis.speak(utter);
   };
 
-  // 🔊 Fungsi panggil suara antrian
   const callNumber = (nomor) => {
     speak("Perhatian. Akan dipanggil.", () => {
-      speak(`Nomor antrian ${nomor.replace("-", " ")}, silakan ke loket ${loket}`);
+      speak(`Nomor antrian ${nomor.replace(/(\w)(\d+)/, "$1 $2")}, silakan ke loket ${loket}`);
     });
   };
 
-  // ▶️ Panggil nomor antrian berikutnya
   const handleNext = async () => {
-    if (loading) {
-      alert("Sedang memuat antrian. Harap tunggu.");
-      return;
-    }
-
-    if (queue.length === 0) {
-      await fetchQueue(loket);
-      if (queue.length === 0) {
-        alert("Antrian masih kosong. Silakan coba lagi nanti.");
-        return;
-      }
-    }
-
-    const next = queue[0];
+    if (loading) return;
+    setLoading(true);
     try {
-      await api.post("/antrian/panggil", { id: next.id, loket });
-      setCurrent(next);
-      setQueue((prev) => prev.slice(1));
-      callNumber(next.nomor);
+      const res = await api.post("/queue/call", { role: "kasir", loket });
+      const data = res.data.data;
+      setCurrent(data);
+      callNumber(data.nomor);
     } catch (err) {
-      console.error("Gagal memanggil antrian:", err);
-      alert("Gagal memanggil antrian. Coba lagi.");
+      alert("Gagal memanggil antrian: " + (err?.response?.data?.message || "Coba lagi."));
+    } finally {
+      setLoading(false);
     }
   };
 
-  // 🔁 Ulangi panggilan terakhir
   const handleRepeat = () => {
     if (!current) {
       alert("Belum ada nomor yang dipanggil.");
@@ -106,14 +71,12 @@ export default function Kasir() {
     callNumber(current.nomor);
   };
 
-  // 🔄 Reset nomor aktif
   const handleReset = () => {
     if (!current) {
       alert("Belum ada nomor yang dipanggil.");
       return;
     }
-    const konfirmasi = confirm(`Reset nomor ${current.nomor}?`);
-    if (!konfirmasi) return;
+    if (!confirm(`Reset nomor ${current.nomor}?`)) return;
     setCurrent(null);
   };
 
@@ -131,23 +94,15 @@ export default function Kasir() {
           </p>
         </div>
 
-        {loading && (
-          <p className="text-center text-sm text-gray-500 italic mb-2">
-            Memuat antrian...
-          </p>
-        )}
-
         <div className="flex flex-col gap-3 mb-6">
           <button
             onClick={handleNext}
-            className={`${
-              loading
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700"
-            } text-white font-bold py-3 rounded-xl text-lg shadow-md transition`}
             disabled={loading}
+            className={`${
+              loading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+            } text-white font-bold py-3 rounded-xl text-lg shadow-md transition`}
           >
-            {current ? "➕ Panggil Antrian Berikutnya" : "▶️ Mulai Antrian"}
+            {loading ? "Memproses..." : current ? "➕ Panggil Antrian Berikutnya" : "▶️ Mulai Antrian"}
           </button>
 
           <button
@@ -165,22 +120,10 @@ export default function Kasir() {
           </button>
         </div>
 
-        <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-4 shadow-inner">
-          <p className="text-sm font-semibold text-gray-600 mb-2">Antrian Selanjutnya:</p>
-          {queue.length > 0 ? (
-            <ul className="space-y-1">
-              {queue.map((item, i) => (
-                <li
-                  key={i}
-                  className="text-gray-800 font-mono text-sm bg-white px-3 py-1 rounded-md shadow-sm border border-gray-100"
-                >
-                  {item.nomor}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-gray-400 text-sm italic">Tidak ada antrian lagi.</p>
-          )}
+        <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-4 shadow-inner text-center">
+          <p className="text-sm font-semibold text-gray-600">
+            Tekan tombol untuk memanggil nomor antrian berikutnya
+          </p>
         </div>
       </div>
     </div>
