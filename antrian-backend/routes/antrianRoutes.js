@@ -1,14 +1,14 @@
 const express = require("express");
 const router = express.Router();
 const {
-  getLastAntrian,
+  getAntrianStatus,
   addAntrian,
   resetAntrian,
 } = require("../controllers/antrianController");
-const { protect, adminOnly } = require("../middleware/authMiddleware");
+const { protect, satpamOrAdmin } = require("../middleware/authMiddleware");
 
-router.get("/:role/last", getLastAntrian);
-router.post("/:role/next", protect, addAntrian);
-router.delete("/:role/reset", protect, adminOnly, resetAntrian);
+router.get("/:role/status", getAntrianStatus);
+router.post("/:role/next", protect, satpamOrAdmin, addAntrian);
+router.delete("/:role/reset", protect, satpamOrAdmin, resetAntrian);
 
 module.exports = router;

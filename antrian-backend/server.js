@@ -10,7 +10,12 @@ for (const envVar of requiredEnvVars) {
 
 const express = require("express");
 const cors = require("cors");
+const fs = require("fs");
+const path = require("path");
 const connectDB = require("./config/db");
+
+// Pastikan folder uploads ada
+fs.mkdirSync(path.join(__dirname, "uploads", "video"), { recursive: true });
 
 const userRoutes = require("./routes/userRoutes");
 const antrianRoutes = require("./routes/antrianRoutes");

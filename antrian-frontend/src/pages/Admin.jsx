@@ -284,7 +284,10 @@ export default function Admin() {
   <div className="min-h-screen bg-gray-50 p-4 text-sm">
     {/* ==== HEADER ==== */}
     <div className="flex justify-between items-center mb-6">
-      <h1 className="text-xl font-bold text-green-700">Dashboard Admin</h1>
+      <div className="flex items-center gap-2">
+        <img src="/images/logo.png" alt="Pegadaian" className="h-10 object-contain" />
+        <span className="text-base font-semibold text-green-700">Dashboard Admin</span>
+      </div>
       <div className="relative">
         <button
           onClick={() => setShowDropdown(!showDropdown)}

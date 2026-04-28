@@ -1,51 +1,58 @@
-const Queue = require("../models/Queue");
+const Queue = require("../models/queue");
 const QueueCounter = require("../models/QueueCounter");
 
-const ANTRIAN_START = { kasir: 1000, penaksir: 2000 };
+const PREFIX = { kasir: "K", penaksir: "P" };
 
-exports.getLastAntrian = async (req, res) => {
+const todayStr = () => new Date().toISOString().split("T")[0];
+
+async function ensureDailyReset(counter) {
+  const t = todayStr();
+  if (!counter || counter.resetDate !== t) {
+    await QueueCounter.findOneAndUpdate(
+      {},
+      { lastKasirAntrian: 0, lastPenaksirAntrian: 0, resetDate: t },
+      { upsert: true }
+    );
+    await Queue.deleteMany({ status: "waiting" });
+  }
+}
+
+exports.getAntrianStatus = async (req, res) => {
   const { role } = req.params;
   if (!["kasir", "penaksir"].includes(role)) {
     return res.status(400).json({ message: "Role tidak valid" });
   }
   try {
-    const counterField = role === "kasir" ? "lastKasirAntrian" : "lastPenaksirAntrian";
-    const counter = await QueueCounter.findOne();
-    const raw = counter ? counter[counterField] : 0;
-    res.json({ nomor: ANTRIAN_START[role] + raw });
+    const [waiting, last] = await Promise.all([
+      Queue.countDocuments({ role, status: "waiting" }),
+      Queue.findOne({ role, status: "waiting" }).sort({ waktu: -1 }),
+    ]);
+    res.json({ waiting, lastNomor: last ? last.nomor : null });
   } catch (err) {
-    res.status(500).json({ message: "Gagal ambil antrian" });
+    res.status(500).json({ message: "Gagal ambil status antrian" });
   }
 };
 
 exports.addAntrian = async (req, res) => {
   const { role } = req.params;
-  const { loket } = req.body;
-
   if (!["kasir", "penaksir"].includes(role)) {
     return res.status(400).json({ message: "Role tidak valid" });
   }
 
-  try {
-    const counterField = role === "kasir" ? "lastKasirAntrian" : "lastPenaksirAntrian";
+  const counterField = role === "kasir" ? "lastKasirAntrian" : "lastPenaksirAntrian";
 
-    const counter = await QueueCounter.findOneAndUpdate(
+  try {
+    const counter = await QueueCounter.findOne();
+    await ensureDailyReset(counter);
+
+    const updated = await QueueCounter.findOneAndUpdate(
       {},
       { $inc: { [counterField]: 1 } },
       { new: true, upsert: true }
     );
 
-    // Nomor = offset + counter (e.g. 1000 + 1 = 1001)
-    const nextNomor = ANTRIAN_START[role] + counter[counterField];
-
-    const newQueue = new Queue({
-      role,
-      nomor: String(nextNomor),
-      loket: loket || (role === "kasir" ? "2" : "1"),
-      status: "waiting",
-    });
-
-    await newQueue.save();
+    const nomor = `${PREFIX[role]}-${updated[counterField].toString().padStart(3, "0")}`;
+    const newQueue = await Queue.create({ role, nomor, loket: "-", status: "waiting" });
     res.status(201).json(newQueue);
   } catch (err) {
     console.error(`Gagal tambah antrian ${role}:`, err);
@@ -59,16 +66,15 @@ exports.resetAntrian = async (req, res) => {
     return res.status(400).json({ message: "Role tidak valid" });
   }
 
-  try {
-    const counterField = role === "kasir" ? "lastKasirAntrian" : "lastPenaksirAntrian";
+  const counterField = role === "kasir" ? "lastKasirAntrian" : "lastPenaksirAntrian";
 
-    await Queue.deleteMany({ role, status: "waiting" });
+  try {
+    await Queue.deleteMany({ role });
     await QueueCounter.findOneAndUpdate(
       {},
-      { [counterField]: 0 },
+      { [counterField]: 0, resetDate: todayStr() },
       { upsert: true }
     );
-
     res.json({ message: `Berhasil reset antrian ${role}` });
   } catch (err) {
     res.status(500).json({ message: "Gagal reset antrian" });

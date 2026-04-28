@@ -4,7 +4,9 @@ const HargaEmas = require("../models/hargaEmas");
 // Ambil semua harga emas
 exports.getAllHarga = async (req, res) => {
   try {
-    const data = await HargaEmas.find().sort({ berat: 1 });
+    const data = await HargaEmas.find();
+    // Sort numerik: "1 gram" < "5 gram" < "10 gram"
+    data.sort((a, b) => (parseFloat(a.berat) || 0) - (parseFloat(b.berat) || 0));
     res.json(data);
   } catch (err) {
     console.error("Gagal ambil harga emas:", err);
