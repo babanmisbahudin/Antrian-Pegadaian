@@ -28,3 +28,12 @@ exports.adminOnly = (req, res, next) => {
     res.status(403).json({ message: "Akses hanya untuk Admin" });
   }
 };
+
+// Middleware: satpam atau admin
+exports.satpamOrAdmin = (req, res, next) => {
+  if (req.user && ["admin", "satpam"].includes(req.user.role)) {
+    next();
+  } else {
+    res.status(403).json({ message: "Akses hanya untuk Satpam atau Admin" });
+  }
+};

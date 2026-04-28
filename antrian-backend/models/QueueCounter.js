@@ -5,6 +5,7 @@ const queueCounterSchema = new mongoose.Schema({
   lastPenaksir: { type: Number, default: 0 },
   lastKasirAntrian: { type: Number, default: 0 },
   lastPenaksirAntrian: { type: Number, default: 0 },
+  resetDate: { type: String, default: "" },
 });
 
 module.exports =
