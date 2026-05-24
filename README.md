@@ -57,7 +57,7 @@ Aplikasi manajemen antrian digital berbasis web yang dirancang untuk **Pegadaian
 ## 🗂️ Struktur Proyek
 
 ```
-antrian-web/
+Antrian-Pegadaian/
 ├── antrian-backend/          # REST API (Node.js + Express)
 │   ├── config/               # Koneksi database
 │   ├── controllers/          # Logic bisnis
@@ -100,8 +100,8 @@ antrian-web/
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/babanmisbahudin/antrian-web.git
-cd antrian-web
+git clone https://github.com/babanmisbahudin/Antrian-Pegadaian.git
+cd Antrian-Pegadaian
 ```
 
 ---
@@ -241,4 +241,5 @@ MIT License — bebas digunakan dan dimodifikasi.
 
 **Baban Misbahudin**
 - GitHub: [@babanmisbahudin](https://github.com/babanmisbahudin)
+- Repo: [Antrian-Pegadaian](https://github.com/babanmisbahudin/Antrian-Pegadaian)
 - Email: babanmisbahudin200@gmail.com
