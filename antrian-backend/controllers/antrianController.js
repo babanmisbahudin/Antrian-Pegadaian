@@ -25,7 +25,7 @@ exports.getAntrianStatus = async (req, res) => {
   try {
     const [waiting, last] = await Promise.all([
       Queue.countDocuments({ role, status: "waiting" }),
-      Queue.findOne({ role, status: "waiting" }).sort({ waktu: -1 }),
+      Queue.findOne({ role }).sort({ waktu: -1 }),
     ]);
     res.json({ waiting, lastNomor: last ? last.nomor : null });
   } catch (err) {

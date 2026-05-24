@@ -27,6 +27,10 @@ const queueSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  recalledAt: {
+    type: Date,
+    default: null,
+  },
 });
 
 module.exports = mongoose.models.Queue || mongoose.model("Queue", queueSchema);

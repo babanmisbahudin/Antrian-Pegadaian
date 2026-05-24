@@ -23,8 +23,12 @@ export default function Home() {
   const [isAnnouncing, setIsAnnouncing]     = useState(false);
   const [audioEnabled, setAudioEnabled]     = useState(false);
 
-  const prevKasir    = useRef(null);
-  const prevPenaksir = useRef(null);
+  const prevKasir            = useRef(null);
+  const prevPenaksir         = useRef(null);
+  const prevKasirRecalled    = useRef(null);
+  const prevPenaksirRecalled = useRef(null);
+  const kasirDataRef         = useRef(null);
+  const penaksirDataRef      = useRef(null);
   const videoRef     = useRef(null);
   const announceQ    = useRef([]);
   const announcing   = useRef(false);
@@ -40,7 +44,7 @@ export default function Home() {
   // ── TTS queue ────────────────────────────────────────────────────────────────
   const processQ = useCallback(() => {
     if (announcing.current || announceQ.current.length === 0) return;
-    if (!audioOn.current) { announceQ.current = []; return; }
+    if (!audioOn.current) return; // tunggu sampai audio diaktifkan
 
     const { nomor, loket } = announceQ.current.shift();
     announcing.current = true;
@@ -86,17 +90,31 @@ export default function Home() {
       const k = data?.kasir   || null;
       const p = data?.penaksir || null;
 
-      if (k?.nomor && k.nomor !== prevKasir.current) {
-        if (prevKasir.current !== null) enqueue(k.nomor, k?.loket || "2");
-        prevKasir.current = k.nomor;
+      if (k?.nomor) {
+        const recalledChanged = k.recalledAt && k.recalledAt !== prevKasirRecalled.current;
+        if (k.nomor !== prevKasir.current) {
+          if (prevKasir.current !== null) enqueue(k.nomor, k?.loket || "2");
+          prevKasir.current = k.nomor;
+        } else if (recalledChanged) {
+          enqueue(k.nomor, k?.loket || "2");
+        }
+        if (k.recalledAt) prevKasirRecalled.current = k.recalledAt;
       }
-      if (p?.nomor && p.nomor !== prevPenaksir.current) {
-        if (prevPenaksir.current !== null) enqueue(p.nomor, p?.loket || "1");
-        prevPenaksir.current = p.nomor;
+      if (p?.nomor) {
+        const recalledChanged = p.recalledAt && p.recalledAt !== prevPenaksirRecalled.current;
+        if (p.nomor !== prevPenaksir.current) {
+          if (prevPenaksir.current !== null) enqueue(p.nomor, p?.loket || "1");
+          prevPenaksir.current = p.nomor;
+        } else if (recalledChanged) {
+          enqueue(p.nomor, p?.loket || "1");
+        }
+        if (p.recalledAt) prevPenaksirRecalled.current = p.recalledAt;
       }
 
       setKasirData(k);
       setPenaksirData(p);
+      kasirDataRef.current    = k;
+      penaksirDataRef.current = p;
     } catch { /* silent */ }
   }, [enqueue]);
 
@@ -155,11 +173,16 @@ export default function Home() {
       videoRef.current.volume = 0.15;
       if (videoRef.current.paused) videoRef.current.play().catch(() => {});
     }
-    // hapus listener setelah sekali jalan
     ["click","touchstart","keydown"].forEach((e) =>
       document.removeEventListener(e, enableAudio)
     );
-  }, []);
+    // langsung umumkan nomor yang sedang terpanggil saat audio diaktifkan
+    const k = kasirDataRef.current;
+    const p = penaksirDataRef.current;
+    if (k?.nomor) announceQ.current.push({ nomor: k.nomor, loket: k.loket || "2" });
+    if (p?.nomor) announceQ.current.push({ nomor: p.nomor, loket: p.loket || "1" });
+    setTimeout(processQ, 300);
+  }, [processQ]);
 
   useEffect(() => {
     ["click","touchstart","keydown"].forEach((e) =>
@@ -192,6 +215,20 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900 flex flex-col">
+
+      {/* Overlay aktifkan suara */}
+      {!audioEnabled && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/70 cursor-pointer"
+          onClick={enableAudio}
+        >
+          <div className="bg-white rounded-2xl p-10 shadow-2xl text-center max-w-sm">
+            <p className="text-5xl mb-4">🔊</p>
+            <p className="text-2xl font-bold text-green-700 mb-2">Aktifkan Suara</p>
+            <p className="text-gray-500 text-sm">Tap / klik di mana saja untuk mengaktifkan pengumuman suara antrian</p>
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <div className="flex justify-between items-center px-6 py-3 bg-white shadow border-b border-gray-200">

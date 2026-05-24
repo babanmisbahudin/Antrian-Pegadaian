@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../api/api";
 
 // ─── ESC/POS helper ───────────────────────────────────────────────────────────
@@ -119,9 +120,18 @@ const PRINT_STYLE = `
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function Satpam() {
+  const navigate = useNavigate();
   const [ticket, setTicket] = useState(null);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState({ kasir: null, penaksir: null });
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    if (!user?.role || !["satpam", "admin"].includes(user.role.toLowerCase())) {
+      alert("Silakan login sebagai Satpam terlebih dahulu.");
+      navigate("/login");
+    }
+  }, [navigate]);
 
   // Bluetooth state
   const [btSupported] = useState(() => !!navigator.bluetooth);

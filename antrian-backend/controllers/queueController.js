@@ -55,6 +55,27 @@ exports.getLastCalled = async (req, res) => {
   }
 };
 
+exports.recallQueue = async (req, res) => {
+  const { role, loket } = req.body;
+  if (!role || !["kasir", "penaksir"].includes(role)) {
+    return res.status(400).json({ message: "Role tidak valid" });
+  }
+  try {
+    const last = await Queue.findOneAndUpdate(
+      { role, status: "called" },
+      { recalledAt: new Date() },
+      { sort: { waktu: -1 }, new: true }
+    );
+    if (!last) {
+      return res.status(404).json({ message: "Tidak ada antrian yang sedang dipanggil" });
+    }
+    res.json({ message: "Antrian diulang", data: last });
+  } catch (err) {
+    console.error("Error recallQueue:", err);
+    res.status(500).json({ message: "Gagal mengulang panggilan" });
+  }
+};
+
 exports.getQueueLog = async (req, res) => {
   try {
     const logs = await Queue.find({ status: "called" })

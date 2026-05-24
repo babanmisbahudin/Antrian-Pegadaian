@@ -49,9 +49,13 @@ export default function Kasir() {
     }
   };
 
-  const handleRepeat = () => {
+  const handleRepeat = async () => {
     if (!current) return alert("Belum ada nomor yang dipanggil.");
-    alert(`Nomor ${current.nomor} — lihat pengumuman di layar TV.`);
+    try {
+      await api.post("/queue/recall", { role: "kasir", loket });
+    } catch (err) {
+      alert("Gagal mengulang: " + (err?.response?.data?.message || "Coba lagi."));
+    }
   };
 
   return (

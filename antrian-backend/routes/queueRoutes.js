@@ -4,6 +4,7 @@ const {
   getQueueStatus,
   resetQueue,
   callQueue,
+  recallQueue,
   getLastCalled,
   getQueueLog,
   getWaitingList,
@@ -15,6 +16,7 @@ router.get("/terakhir", getLastCalled);
 router.get("/log", protect, adminOnly, getQueueLog);
 router.get("/waiting/:role", protect, getWaitingList);
 router.post("/call", protect, callQueue);
+router.post("/recall", protect, recallQueue);
 router.post("/reset", protect, adminOnly, resetQueue);
 
 module.exports = router;
